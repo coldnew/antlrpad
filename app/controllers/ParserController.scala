@@ -12,14 +12,22 @@ class ParserController extends Controller {
   implicit val treeViewModel = Json.writes[ParseTreeViewModel]
 
   def parseSrc() = Action { request =>
-    val grammarSrc = request.body.asFormUrlEncoded.get("grammar").head
-    val src = request.body.asFormUrlEncoded.get("src").head
-    val rule = request.body.asFormUrlEncoded.find(_ == "rule").getOrElse("").toString
+    val postData = request.body.asFormUrlEncoded.getOrElse(Map.empty)
 
-    val (g, lg) = new GrammarParser().parseGrammar(grammarSrc)
-    val tree = new TextParser().parse(src, rule, g, lg)
+    val grammarSrc = postData.getOrElse("grammar", Seq.empty).headOption.orNull
+    val src = postData.getOrElse("src", Seq.empty).headOption.orNull
+    val rule = postData.getOrElse("rule", Seq.empty).headOption.orNull
 
-    Ok(Json.toJson(tree))
+    (grammarSrc, src) match {
+      case (null, _) => BadRequest("src parameter must be specified, content should be form encoded")
+      case (_, null) => BadRequest("grammar parameter must be specified, content should be form encoded")
+      case (grammarSrc, src) => {
+        val (g, lg) = new GrammarParser().parseGrammar(grammarSrc)
+        val tree = new TextParser().parse(src, rule, g, lg)
+
+        Ok(Json.toJson(tree))
+      }
+    }
   }
 
 }
