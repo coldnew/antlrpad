@@ -2,12 +2,9 @@ $(function(){
 
 
     function draw(tree) {
-
-        $('#tree').jstree({
-            'core': {
-                data: tree
-            }
-        });
+        $('#tree').jstree();
+        $('#tree').jstree(true).settings.core.data = tree;
+        $('#tree').jstree(true).refresh();
     }
 
     function getTreeModel(tree) {
