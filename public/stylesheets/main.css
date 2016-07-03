@@ -1,0 +1,16 @@
+#grammar {
+    min-height: 500px;
+}
+
+#tree {
+    min-width:400px;
+    height:500px;
+}
+
+.m10t {
+    margin-top: 1em;
+}
+
+.m10b {
+    margin-bottom: 1em;
+}

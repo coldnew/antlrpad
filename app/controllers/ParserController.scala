@@ -1,7 +1,7 @@
 package controllers
 
 import com.google.inject.Singleton
-import models.ParseTreeViewModel
+import models.{ParseResponseModel, ParseTreeViewModel}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, Controller}
 import services.{GrammarParser, TextParser}
@@ -10,6 +10,7 @@ import services.{GrammarParser, TextParser}
 class ParserController extends Controller {
 
   implicit val treeViewModel = Json.writes[ParseTreeViewModel]
+  implicit val responseModel = Json.writes[ParseResponseModel]
 
   def parseSrc() = Action { request =>
     val postData = request.body.asFormUrlEncoded.getOrElse(Map.empty)
@@ -25,7 +26,7 @@ class ParserController extends Controller {
         val (g, lg) = new GrammarParser().parseGrammar(grammarSrc)
         val tree = new TextParser().parse(src, rule, g, lg)
 
-        Ok(Json.toJson(tree))
+        Ok(Json.toJson(ParseResponseModel(tree, g.getRuleNames)))
       }
     }
   }
