@@ -6,7 +6,7 @@ import org.antlr.v4.tool.{Grammar, GrammarParserInterpreter, LexerGrammar}
 
 import scala.collection.JavaConverters._
 
-class TextParser {
+trait AntlrTextParser extends TextParser{
   def parse(src: String, startRule: String, grammar: Grammar, lexerGrammar: LexerGrammar): ParseTreeViewModel = {
     val (tree, rulesNames) = parseText(src, startRule, grammar, lexerGrammar)
     getTreeModel(tree, rulesNames)
