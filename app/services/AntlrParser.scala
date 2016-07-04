@@ -3,21 +3,21 @@ package services
 import models.ParseTreeViewModel
 import org.antlr.v4.tool.{Grammar, LexerGrammar}
 
-trait GrammarParser {
-  def parseGrammar(src: String): (Grammar, LexerGrammar)
+trait GrammarParser[G, LG] {
+  def parseGrammar(src: String): (G, LG)
 }
 
-trait TextParser {
-  def parse(src: String, startRule: String, grammar: Grammar, lexerGrammar: LexerGrammar): ParseTreeViewModel
+trait TextParser[G, LG, M] {
+  def parse(src: String, startRule: String, grammar: G, lexerGrammar: LG): M
 }
 
-trait Parser {
-  this: GrammarParser with TextParser =>
+trait Parser[G, LG, M] {
+  this: GrammarParser[G, LG] with TextParser[G, LG, M] =>
 
-  def parse(grammar: String, startRule: String, src: String): (ParseTreeViewModel, Seq[String])
+  def parse(grammar: String, startRule: String, src: String): (M, Seq[String])
 }
 
-class AntlrParser extends Parser with AntlrGrammarParser with AntlrTextParser {
+class AntlrParser extends Parser[Grammar, LexerGrammar, ParseTreeViewModel] with AntlrGrammarParser with AntlrTextParser {
   def parse(grammar: String, startRule: String, src: String): (ParseTreeViewModel, Seq[String]) = {
     val (g, lg) = parseGrammar(grammar)
     val tree = parse(src, startRule, g, lg)
