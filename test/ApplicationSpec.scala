@@ -17,24 +17,26 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
 
   }
 
-  "HomeController" should {
+  "ParseController" should {
 
-    "render the index page" in {
-      val home = route(app, FakeRequest(GET, "/")).get
+    "give bad request when no grammar " in {
+      val home = route(app, FakeRequest(POST, "/api/parse")).get
 
-      status(home) mustBe OK
-      contentType(home) mustBe Some("text/html")
-      contentAsString(home) must include ("Your new application is ready.")
+      status(home) mustBe BAD_REQUEST
     }
 
   }
 
-  "CountController" should {
+  "ParseController" should {
 
-    "return an increasing count" in {
-      contentAsString(route(app, FakeRequest(GET, "/count")).get) mustBe "0"
-      contentAsString(route(app, FakeRequest(GET, "/count")).get) mustBe "1"
-      contentAsString(route(app, FakeRequest(GET, "/count")).get) mustBe "2"
+    "parse the result " in {
+      val home = route(app, FakeRequest(POST, "/api/parse").withFormUrlEncodedBody(
+        ("grammar", "grammar test; \n two: '2';"),
+        ("src", "2"),
+        ("rule", "")
+      )).get
+
+      status(home) mustBe OK
     }
 
   }
