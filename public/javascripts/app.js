@@ -28,6 +28,10 @@ $(function(){
             }
 
             draw(getTreeModel(data.tree));
+
+            $('#grammarError').hide();
+        }).fail(function(err){
+            $('#grammarError').show();
         });
     });
 })

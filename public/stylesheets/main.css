@@ -14,3 +14,5 @@
 .m10b {
     margin-bottom: 1em;
 }
+
+#grammarError { display: none; }
