@@ -39,9 +39,15 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       status(home) mustBe BAD_REQUEST
     }
 
-  }
+    "give bad request when grammar is incorrect" in {
+      val home = route(app, FakeRequest(POST, "/api/parse").withFormUrlEncodedBody(
+        ("grammar", "grammar test; \n two: '2'"),
+        ("src", "2"),
+        ("rule", "")
+      )).get
 
-  "ParseController" should {
+      status(home) mustBe BAD_REQUEST
+    }
 
     "parse the result " in {
       val home = route(app, FakeRequest(POST, "/api/parse").withFormUrlEncodedBody(

@@ -1,13 +1,13 @@
 package controllers
 
-import com.google.inject.Singleton
+import com.google.inject.{Inject, Singleton}
 import models.{ParseResponseModel, ParseTreeViewModel}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, Controller}
 import services.AntlrParser
 
 @Singleton
-class ParserController extends Controller {
+class ParserController @Inject() (parser: AntlrParser) extends Controller {
 
   implicit val treeViewModel = Json.writes[ParseTreeViewModel]
   implicit val responseModel = Json.writes[ParseResponseModel]
@@ -23,9 +23,8 @@ class ParserController extends Controller {
       case (null, _) => BadRequest("src parameter must be specified, content should be form encoded")
       case (_, null) => BadRequest("grammar parameter must be specified, content should be form encoded")
       case (grammarSrc, src) => {
-        val (tree, rules) = new AntlrParser().parse(grammarSrc, rule.trim, src)
-        (tree, rules) match {
-          case (Some(t), _) => Ok(Json.toJson(ParseResponseModel(t, rules)))
+        parser.parse(grammarSrc, rule.trim, src) match {
+          case (Some(t), rules) => Ok(Json.toJson(ParseResponseModel(t, rules)))
           case _ => BadRequest("There are errors in grammar, source cannot be parsed")
         }
       }
