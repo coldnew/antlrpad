@@ -10,6 +10,6 @@ class AntlrGrammarParser {
     val grammar = Some(tool.createGrammar(grammarRootAst))
     tool.process(grammar.get, false)  // safe to unwrap here, null is handled in process. Doesn't look good though
 
-    (grammar, grammar map { _.getImplicitLexer })
+    (grammar, grammar.flatMap(g => Option(g.getImplicitLexer)))
   }
 }

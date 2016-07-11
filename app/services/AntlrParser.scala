@@ -7,7 +7,7 @@ class AntlrParser @Inject() (textParser: AntlrTextParser, grammarParser: AntlrGr
 
   def parse(grammarSrc: String, startRule: String, src: String): (Option[ParseTreeViewModel], Seq[String]) = {
     grammarParser.parseGrammar(grammarSrc) match {
-      case (Some(g), Some(lg)) if lg != null => (Some(textParser.parse(src, startRule, g, lg)), g.getRuleNames)
+      case (Some(g), Some(lg)) => (Some(textParser.parse(src, startRule, g, lg)), g.getRuleNames)
       case _ => (None, Seq.empty)
     }
 
