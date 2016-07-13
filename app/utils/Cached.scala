@@ -25,10 +25,7 @@ object Cached {
 
   class CacheBuilderBy[TKey](val key: TKey) {
     def value[TValue](body: => TValue)(implicit cacheStorage: CacheStorage[TKey, TValue]): TValue = {
-      cacheStorage.get(key).getOrElse({
-        println("Oui")
-        cacheStorage.put(key, body)
-      })
+      cacheStorage.get(key).getOrElse(cacheStorage.put(key, body))
     }
   }
 
