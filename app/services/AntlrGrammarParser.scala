@@ -1,15 +1,29 @@
 package services
 
 import org.antlr.v4.tool.{Grammar, LexerGrammar}
+import utils.Cached._
+
+object Defaults {
+  import utils.InMemoryCache
+
+  implicit lazy val inMemoryCache = new InMemoryCache[Int, (Option[Grammar], Option[LexerGrammar])]()
+}
 
 class AntlrGrammarParser {
+
   def parseGrammar(src: String): (Option[Grammar], Option[LexerGrammar]) = {
-    val tool = new org.antlr.v4.Tool()
-    val grammarRootAst = tool.parseGrammarFromString(src)
+    import Defaults.inMemoryCache
 
-    val grammar = Some(tool.createGrammar(grammarRootAst))
-    tool.process(grammar.get, false)  // safe to unwrap here, null is handled in process. Doesn't look good though
+    cache by src.hashCode value {
+      val tool = new org.antlr.v4.Tool()
+      val grammarRootAst = tool.parseGrammarFromString(src)
 
-    (grammar, grammar.flatMap(g => Option(g.getImplicitLexer)))
+      val grammar = Option(tool.createGrammar(grammarRootAst))
+      tool.process(grammar.get, false) // safe to unwrap here, null is handled in process. Doesn't look good though
+
+      (grammar, grammar.map(g => g.getImplicitLexer))
+    }
+
   }
+
 }
