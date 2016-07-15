@@ -2,6 +2,8 @@ package controllers
 
 import com.google.inject.{Inject, Singleton}
 import models.{ParseResponseModel, ParseTreeViewModel}
+import play.api.data._
+import play.api.data.Forms._
 import play.api.libs.json.Json
 import play.api.mvc.{Action, Controller}
 import services.AntlrParser
@@ -12,23 +14,27 @@ class ParserController @Inject() (parser: AntlrParser) extends Controller {
   implicit val treeViewModel = Json.writes[ParseTreeViewModel]
   implicit val responseModel = Json.writes[ParseResponseModel]
 
-  def parseSrc() = Action { request =>
-    val postData = request.body.asFormUrlEncoded.getOrElse(Map.empty)
+  case class ParseRequest(src: String, grammar: String, rule: String)
 
-    val grammarSrc = postData.getOrElse("grammar", Seq.empty).headOption.orNull
-    val src = postData.getOrElse("src", Seq.empty).headOption.orNull
-    val rule = postData.getOrElse("rule", Seq.empty).headOption.orNull
+  val form = Form(mapping(
+    "src" -> text,
+    "grammar" -> text,
+    "rule" -> text
+  )(ParseRequest.apply)(ParseRequest.unapply))
 
-    (grammarSrc, src) match {
-      case (null, _) => BadRequest("src parameter must be specified, content should be form encoded")
-      case (_, null) => BadRequest("grammar parameter must be specified, content should be form encoded")
-      case (grammarSrc, src) => {
-        parser.parse(grammarSrc, rule.trim, src) match {
-          case (Some(t), rules) => Ok(Json.toJson(ParseResponseModel(t, rules)))
-          case _ => BadRequest("There are errors in grammar, source cannot be parsed")
+  def parseSrc() = Action { implicit request =>
+    form.bindFromRequest.fold(
+      formWithErrors => BadRequest(formWithErrors.errors.map(_.message).mkString(", ")),
+      parsedForm => parsedForm match {
+        case ParseRequest(null, _, _) => BadRequest("src parameter must be specified, content should be form encoded")
+        case ParseRequest(_, null, _) => BadRequest("grammar parameter must be specified, content should be form encoded")
+        case ParseRequest(src, grammarSrc, rule) => {
+          parser.parse(grammarSrc, rule.trim, src) match {
+            case (Some(t), rules) => Ok(Json.toJson(ParseResponseModel(t, rules)))
+            case _ => BadRequest("There are errors in grammar, source cannot be parsed")
+          }
         }
-      }
+      })
     }
-  }
 
 }
