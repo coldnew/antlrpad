@@ -21,7 +21,7 @@ class AntlrGrammarParser {
       val grammar = Option(tool.createGrammar(grammarRootAst))
       grammar.foreach(g => tool.process(g, false))
 
-      (grammar, grammar.map(g => g.getImplicitLexer))
+      (grammar, grammar.flatMap(g => Option(g.getImplicitLexer)))
     }
 
   }
