@@ -15,22 +15,23 @@ class ParserController @Inject() (parser: AntlrParser, val messagesApi: Messages
   implicit val treeViewModel = Json.writes[ParseTreeViewModel]
   implicit val responseModel = Json.writes[ParseResponseModel]
 
-  case class ParseRequest(src: String, grammar: String, rule: String)
-
-  val form = Form(mapping(
+  val form = Form(tuple(
     "src" -> nonEmptyText,
     "grammar" -> nonEmptyText,
     "rule" -> text
-  )(ParseRequest.apply)(ParseRequest.unapply))
+  ))
 
   def parseSrc() = Action { implicit request =>
 
     form.bindFromRequest.fold(
       formWithErrors => BadRequest(formWithErrors.errorsAsJson),
-      parsedForm => parser.parse(parsedForm.grammar, parsedForm.rule.trim, parsedForm.src) match {
-        case (Some(t), rules) => Ok(Json.toJson(ParseResponseModel(t, rules)))
-        case _ => BadRequest("There are errors in grammar, source cannot be parsed")
-      })
-    }
-
+      formData => {
+        val (src, grammar, rule) = formData
+        parser.parse(grammar, rule.trim, src) match {
+          case (Some(t), rules) => Ok(Json.toJson(ParseResponseModel(t, rules)))
+          case _ => BadRequest("There are errors in grammar, source cannot be parsed")
+        }
+      }
+    )
+  }
 }
