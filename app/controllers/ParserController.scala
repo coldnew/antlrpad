@@ -7,10 +7,15 @@ import play.api.data.Forms._
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, Controller}
+import repo.{ParsedResult, ParsedResultsRepository}
 import services.AntlrParser
 
+import scala.concurrent.Future
+
 @Singleton
-class ParserController @Inject() (parser: AntlrParser, val messagesApi: MessagesApi) extends Controller with I18nSupport {
+class ParserController @Inject() (parser: AntlrParser, val messagesApi: MessagesApi, private val repo: ParsedResultsRepository) extends Controller with I18nSupport {
+
+  import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
   implicit val treeViewModel = Json.writes[ParseTreeViewModel]
   implicit val responseModel = Json.writes[ParseResponseModel]
@@ -21,15 +26,20 @@ class ParserController @Inject() (parser: AntlrParser, val messagesApi: Messages
     "rule" -> text
   ))
 
-  def parseSrc() = Action { implicit request =>
+  def parseSrc() = Action.async { implicit request =>
 
     form.bindFromRequest.fold(
-      formWithErrors => BadRequest(formWithErrors.errorsAsJson),
+      formWithErrors => Future {
+        BadRequest(formWithErrors.errorsAsJson)
+      },
       formData => {
         val (src, grammar, rule) = formData
         parser.parse(grammar, rule.trim, src) match {
-          case (Some(t), rules) => Ok(Json.toJson(ParseResponseModel(t, rules)))
-          case _ => BadRequest("There are errors in grammar, source cannot be parsed")
+          case (Some(t), rules) => {
+            val record = new ParsedResult(grammar, src, "", None)
+            repo.save(record).map(i => Ok(Json.toJson(ParseResponseModel(t, rules, i))))
+          }
+          case _ => Future{ BadRequest("There are errors in grammar, source cannot be parsed") }
         }
       }
     )
