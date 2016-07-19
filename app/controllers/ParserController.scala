@@ -23,7 +23,8 @@ class ParserController @Inject() (parser: AntlrParser, val messagesApi: Messages
   val form = Form(tuple(
     "src" -> nonEmptyText,
     "grammar" -> nonEmptyText,
-    "rule" -> text
+    "rule" -> text,
+    "id" -> optional(number)
   ))
 
   def parseSrc() = Action.async { implicit request =>
@@ -33,11 +34,13 @@ class ParserController @Inject() (parser: AntlrParser, val messagesApi: Messages
         BadRequest(formWithErrors.errorsAsJson)
       },
       formData => {
-        val (src, grammar, rule) = formData
+        val (src, grammar, rule, id) = formData
         parser.parse(grammar, rule.trim, src) match {
           case (Some(t), rules) => {
-            val record = new ParsedResult(grammar, src, "", None)
-            repo.insert(record).map(i => Ok(Json.toJson(ParseResponseModel(t, rules, i))))
+            repo.save(new ParsedResult(grammar, src, "", id)).map(rec => {
+              val recId = rec.getOrElse(id.get)
+              Ok(Json.toJson(ParseResponseModel(t, rules, recId)))
+            })
           }
           case _ => Future{ BadRequest("There are errors in grammar, source cannot be parsed") }
         }

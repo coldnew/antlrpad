@@ -1,6 +1,6 @@
 # Routes
 
-GET     /                            controllers.Assets.at(path="/public", file="index.html")
+GET     /                        controllers.Assets.at(path="/public", file="index.html")
 
 POST     /api/parse                  controllers.ParserController.parseSrc
 
