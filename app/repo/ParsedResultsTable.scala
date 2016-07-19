@@ -15,15 +15,18 @@ class ParsedResultsRepository @Inject() (protected val dbConfigProvider: Databas
 
   import driver.api._
 
-  def save(parsedResult: ParsedResult): Future[Int] = db.run { resultsTableQueryInc += parsedResult }
+  def insert(parsedResult: ParsedResult): Future[Int] = db.run { resultsTableQueryInc += parsedResult }
+  def save(parsedResult: ParsedResult): Future[Option[ParsedResult]] = db.run {
+    (resultsTableQuery returning resultsTableQuery).insertOrUpdate(parsedResult)
+  }
 }
 
-private[repo] trait ParsedResultsTable {
+trait ParsedResultsTable {
   self: HasDatabaseConfigProvider[JdbcProfile] =>
 
   import driver.api._
 
-  private[ParsedResultsTable] class ParsedResultsTable(tag: Tag) extends Table[ParsedResult](tag, "ParsedResults") {
+  class ParsedResultsTable(tag: Tag) extends Table[ParsedResult](tag, "ParsedResults") {
     val id: Rep[Int] = column[Int]("id", O.AutoInc, O.PrimaryKey)
     val grammar: Rep[String] = column[String]("grammar")
     val src: Rep[String] = column[String]("src")
@@ -34,5 +37,4 @@ private[repo] trait ParsedResultsTable {
 
   lazy protected val resultsTableQuery = TableQuery[ParsedResultsTable]
   lazy protected val resultsTableQueryInc = resultsTableQuery returning resultsTableQuery.map(_.id)
-
 }

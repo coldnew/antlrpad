@@ -37,7 +37,7 @@ class ParserController @Inject() (parser: AntlrParser, val messagesApi: Messages
         parser.parse(grammar, rule.trim, src) match {
           case (Some(t), rules) => {
             val record = new ParsedResult(grammar, src, "", None)
-            repo.save(record).map(i => Ok(Json.toJson(ParseResponseModel(t, rules, i))))
+            repo.insert(record).map(i => Ok(Json.toJson(ParseResponseModel(t, rules, i))))
           }
           case _ => Future{ BadRequest("There are errors in grammar, source cannot be parsed") }
         }
