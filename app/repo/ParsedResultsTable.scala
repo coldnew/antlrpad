@@ -16,8 +16,13 @@ class ParsedResultsRepository @Inject() (protected val dbConfigProvider: Databas
   import driver.api._
 
   def insert(parsedResult: ParsedResult): Future[Int] = db.run { resultsTableQueryInc += parsedResult }
+
   def save(parsedResult: ParsedResult): Future[Option[Int]] = db.run {
     resultsTableQueryInc.insertOrUpdate(parsedResult)
+  }
+
+  def load(id: Int): Future[Option[ParsedResult]] = db.run {
+    resultsTableQuery.filter(_.id === id).result.headOption
   }
 }
 

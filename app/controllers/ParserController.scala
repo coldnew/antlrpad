@@ -19,6 +19,7 @@ class ParserController @Inject() (parser: AntlrParser, val messagesApi: Messages
 
   implicit val treeViewModel = Json.writes[ParseTreeViewModel]
   implicit val responseModel = Json.writes[ParseResponseModel]
+  implicit val parsedResult = Json.writes[ParsedResult]
 
   val form = Form(tuple(
     "src" -> nonEmptyText,
@@ -27,8 +28,14 @@ class ParserController @Inject() (parser: AntlrParser, val messagesApi: Messages
     "id" -> optional(number)
   ))
 
-  def parseSrc() = Action.async { implicit request =>
+  def load(id: Int) = Action.async {
+    repo.load(id).map(_ match {
+      case Some(record) => Ok(Json.toJson(record))
+      case None => NotFound("Cannot found parsed result")
+    })
+  }
 
+  def parseSrc() = Action.async { implicit request =>
     form.bindFromRequest.fold(
       formWithErrors => Future {
         BadRequest(formWithErrors.errorsAsJson)
@@ -37,7 +44,7 @@ class ParserController @Inject() (parser: AntlrParser, val messagesApi: Messages
         val (src, grammar, rule, id) = formData
         parser.parse(grammar, rule.trim, src) match {
           case (Some(t), rules) => {
-            repo.save(new ParsedResult(grammar, src, "", id)).map(rec => {
+            repo.save(new ParsedResult(grammar, src, Json.toJson(t).toString(), id)).map(rec => {
               val recId = rec.getOrElse(id.get)
               Ok(Json.toJson(ParseResponseModel(t, rules, recId)))
             })

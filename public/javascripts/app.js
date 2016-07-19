@@ -1,11 +1,13 @@
 $(function(){
 
-    var url = 'api/parse';
-    function loadTree() {
+    var parseUrl = 'api/parse';
+    var loadUrl = 'api/load/';
+
+    function parseExpression() {
         var grammar = $('#grammar').val();
         var src = $('#src').val();
         var startRuleSel = $('#startRule');
-        $.post(url, { grammar: grammar, src: src, rule: startRuleSel.val(), id: sessionId }, function(data){
+        $.post(parseUrl, { grammar: grammar, src: src, rule: startRuleSel.val(), id: sessionId }, function(data){
             startRuleSel.empty();
             for(var o in data.rules) {
                 startRuleSel.append('<option>' + data.rules[o] + '</option>');
@@ -16,6 +18,14 @@ $(function(){
             $('#grammarError').hide();
         }).fail(function(err){
             $('#grammarError').show();
+        });
+    }
+
+    function loadTree() {
+        $.get(loadUrl + sessionId, {}, function(res){
+            $('#grammar').val(res.grammar);
+            $('#src').val(res.src);
+            draw(getTreeModel(JSON.parse(res.tree)));
         });
     }
 
@@ -40,6 +50,6 @@ $(function(){
     }
 
     $('#parse').click(function() {
-        loadTree();
+        parseExpression();
     });
 })
