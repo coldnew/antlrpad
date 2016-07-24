@@ -7,7 +7,7 @@ import slick.driver.JdbcProfile
 
 import scala.concurrent.Future
 
-case class ParsedResult(grammar: String, src: String, tree: String, id: Option[Int] = None)
+case class ParsedResult(grammar: String, src: String, tree: String, rules: String, rule: String, id: Option[Int] = None)
 
 @Singleton()
 class ParsedResultsRepository @Inject() (protected val dbConfigProvider: DatabaseConfigProvider) extends ParsedResultsTable
@@ -36,8 +36,10 @@ trait ParsedResultsTable {
     val grammar: Rep[String] = column[String]("grammar")
     val src: Rep[String] = column[String]("src")
     val tree: Rep[String] = column[String]("tree")
+    val rules: Rep[String] = column[String]("rules")
+    val rule: Rep[String] = column[String]("rule")
 
-    def * = (grammar, src, tree, id.?) <> (ParsedResult.tupled, ParsedResult.unapply)
+    def * = (grammar, src, tree, rules, rule, id.?) <> (ParsedResult.tupled, ParsedResult.unapply)
   }
 
   lazy protected val resultsTableQuery = TableQuery[ParsedResultsTable]

@@ -34,13 +34,13 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
   "ParseController" should {
 
     "give bad request when no grammar " in {
-      val home = route(app, FakeRequest(POST, "/api/parse")).get
+      val home = route(app, FakeRequest(POST, "/api/parse/")).get
 
       status(home) mustBe BAD_REQUEST
     }
 
     "give bad request when grammar is incorrect" in {
-      val home = route(app, FakeRequest(POST, "/api/parse").withFormUrlEncodedBody(
+      val home = route(app, FakeRequest(POST, "/api/parse/").withFormUrlEncodedBody(
         ("grammar", "grammar test; \n two: '2'"),
         ("src", "2"),
         ("rule", "")
@@ -50,7 +50,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     }
 
     "parse the result " in {
-      val home = route(app, FakeRequest(POST, "/api/parse").withFormUrlEncodedBody(
+      val home = route(app, FakeRequest(POST, "/api/parse/").withFormUrlEncodedBody(
         ("grammar", "grammar test; \n two: '2';"),
         ("src", "2"),
         ("rule", "")

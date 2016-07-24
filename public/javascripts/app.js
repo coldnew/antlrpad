@@ -1,37 +1,48 @@
 $(function(){
 
-    var parseUrl = 'api/parse';
+    var parseUrl = 'api/parse/';
     var loadUrl = 'api/load/';
+    var saveUrl = 'api/save/';
 
-    function parseExpression() {
+    function loadRules(rules, rule) {
+        var startRuleSel = $('#startRule');
+        startRuleSel.empty();
+        for(var o in rules) {
+            startRuleSel.append('<option>' + rules[o] + '</option>');
+        }
+
+        startRuleSel.val(rule);
+    }
+
+    function parseExpression(url, callback) {
         var grammar = $('#grammar').val();
         var src = $('#src').val();
         var startRuleSel = $('#startRule');
-        $.post(parseUrl, { grammar: grammar, src: src, rule: startRuleSel.val(), id: sessionId }, function(data){
-            startRuleSel.empty();
-            for(var o in data.rules) {
-                startRuleSel.append('<option>' + data.rules[o] + '</option>');
+        $.post(url, { grammar: grammar, src: src, rule: startRuleSel.val() }, function(data){
+            loadRules(data.rules, data.rule);
+            draw(getTreeModel(data.tree));
+            $('#grammarError').hide();
+            if (callback) {
+                callback(data.id);
             }
 
-            draw(getTreeModel(data.tree));
-            sessionId = data.id;
-            $('#grammarError').hide();
         }).fail(function(err){
             $('#grammarError').show();
         });
     }
 
-    function loadTree() {
-        $.get(loadUrl + sessionId, {}, function(res){
+    function loadTree(id) {
+        $.get(loadUrl + id, {}, function(res){
             $('#grammar').val(res.grammar);
             $('#src').val(res.src);
             draw(getTreeModel(JSON.parse(res.tree)));
+            loadRules(res.rules.split(','), res.rule);
         });
     }
 
     var sessionId = location.hash.substring(1);
     if (sessionId) {
-        loadTree();
+        loadTree(sessionId);
     }
 
     function draw(tree) {
@@ -50,6 +61,12 @@ $(function(){
     }
 
     $('#parse').click(function() {
-        parseExpression();
+        parseExpression(parseUrl);
+    });
+
+    $('#save').click(function() {
+        parseExpression(saveUrl, function(id){
+            window.location = '/#' + id;
+        });
     });
 })

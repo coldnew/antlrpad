@@ -6,11 +6,12 @@ import play.api.data._
 import play.api.data.Forms._
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.json.Json
-import play.api.mvc.{Action, Controller}
+import play.api.mvc.{Action, AnyContent, Controller, Request}
 import repo.{ParsedResult, ParsedResultsRepository}
 import services.AntlrParser
 
 import scala.concurrent.Future
+
 
 @Singleton
 class ParserController @Inject() (parser: AntlrParser, val messagesApi: MessagesApi, private val repo: ParsedResultsRepository) extends Controller with I18nSupport {
@@ -24,34 +25,47 @@ class ParserController @Inject() (parser: AntlrParser, val messagesApi: Messages
   val form = Form(tuple(
     "src" -> nonEmptyText,
     "grammar" -> nonEmptyText,
-    "rule" -> text,
-    "id" -> optional(number)
+    "rule" -> text
   ))
 
   def load(id: Int) = Action.async {
     repo.load(id).map(_ match {
       case Some(record) => Ok(Json.toJson(record))
-      case None => NotFound("Cannot found parsed result")
+      case None => NotFound("Cannot find parsed result")
     })
   }
 
-  def parseSrc() = Action.async { implicit request =>
+  type Error = String
+  type Success = (String, String, Seq[String], String, ParseTreeViewModel)
+
+  def parseFromRequest(implicit request: Request[AnyContent]): Either[Error, Success] = {
     form.bindFromRequest.fold(
-      formWithErrors => Future {
-        BadRequest(formWithErrors.errorsAsJson)
-      },
+      formWithErrors => Left(formWithErrors.errorsAsJson.toString()),
       formData => {
-        val (src, grammar, rule, id) = formData
+        val (src, grammar, rule) = formData
         parser.parse(grammar, rule.trim, src) match {
-          case (Some(t), rules) => {
-            repo.save(new ParsedResult(grammar, src, Json.toJson(t).toString(), id)).map(rec => {
-              val recId = rec.getOrElse(id.get)
-              Ok(Json.toJson(ParseResponseModel(t, rules, recId)))
-            })
-          }
-          case _ => Future{ BadRequest("There are errors in grammar, source cannot be parsed") }
+          case (Some(tree), rules) => Right((grammar, src, rules, rule.trim, tree))
+          case _ => Left("There are errors in grammar, source cannot be parsed")
         }
       }
     )
+  }
+
+  def parseSrc() = Action { request=>
+    parseFromRequest(request) match {
+      case Left(err) => BadRequest(err)
+      case Right((_, _, rules, rule, tree)) => Ok(Json.toJson(new ParseResponseModel(tree, rules, rule)))
+    }
+  }
+
+  def save() = Action.async { request =>
+    parseFromRequest(request) match {
+      case Left(err) => Future { BadRequest(err) }
+      case Right((grammar, src, rules, rule, tree)) => {
+        repo.save(new ParsedResult(grammar, src, Json.toJson(tree).toString(), rules.mkString(","), rule, None)).map(id => {
+          Ok(Json.toJson(new ParseResponseModel(tree, rules, rule, id)))
+        })
+      }
+    }
   }
 }
