@@ -2,6 +2,7 @@ package repo
 
 import javax.inject.{Inject, Singleton}
 
+import com.google.inject.ImplementedBy
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import slick.driver.JdbcProfile
 
@@ -9,8 +10,15 @@ import scala.concurrent.Future
 
 case class ParsedResult(grammar: String, src: String, tree: String, rules: String, rule: String, id: Option[Int] = None)
 
+@ImplementedBy(classOf[ParsedResultsRepositoryImpl])
+trait ParsedResultsRepository {
+  def insert(parsedResult: ParsedResult): Future[Int]
+  def save(parsedResult: ParsedResult): Future[Option[Int]]
+  def load(id: Int): Future[Option[ParsedResult]]
+}
+
 @Singleton()
-class ParsedResultsRepository @Inject() (protected val dbConfigProvider: DatabaseConfigProvider) extends ParsedResultsTable
+class ParsedResultsRepositoryImpl @Inject() (protected val dbConfigProvider: DatabaseConfigProvider) extends ParsedResultsTable with ParsedResultsRepository
     with HasDatabaseConfigProvider[JdbcProfile] {
 
   import driver.api._

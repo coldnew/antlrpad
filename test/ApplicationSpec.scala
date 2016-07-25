@@ -1,16 +1,30 @@
+import akka.stream.Materializer
 import org.scalatestplus.play._
 import play.api.test._
 import play.api.test.Helpers._
-import akka.stream.{Materializer}
+import org.scalatest.TestData
+import play.api.Application
+import play.api.inject.guice._
+import play.api.inject._
+import repo.{ParsedResult, ParsedResultsRepository}
+import scala.concurrent.Future
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
-/**
- * Add your spec here.
- * You can mock out a whole application including requests, plugins etc.
- * For more information, consult the wiki.
- */
+class ParsedResultsRepositoryMock extends ParsedResultsRepository {
+  override def insert(parsedResult: ParsedResult): Future[Int] = Future { 0 }
+  override def load(id: Int): Future[Option[ParsedResult]] = Future { Some(new ParsedResult("", "", "", "", "", None)) }
+  override def save(parsedResult: ParsedResult): Future[Option[Int]] = Future { Some(0) }
+}
+
 class ApplicationSpec extends PlaySpec with OneAppPerTest {
 
   implicit lazy val materializer: Materializer = app.materializer
+
+  override def newAppForTest(testData: TestData): Application = {
+    new GuiceApplicationBuilder()
+      .overrides(bind[ParsedResultsRepository].to[ParsedResultsRepositoryMock])
+      .build
+  }
 
   "Routes" should {
 
@@ -24,7 +38,6 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
 
     "give static page " in {
       val home = route(app, FakeRequest(GET, "/")).get
-
       status(home) mustBe OK
       contentAsString(home) must include("<title>AntlrPad</title>")
     }
@@ -35,7 +48,6 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
 
     "give bad request when no grammar " in {
       val home = route(app, FakeRequest(POST, "/api/parse/")).get
-
       status(home) mustBe BAD_REQUEST
     }
 
@@ -58,7 +70,6 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
 
       status(home) mustBe OK
     }
-
   }
 
 }
