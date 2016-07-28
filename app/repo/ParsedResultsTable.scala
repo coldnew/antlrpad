@@ -8,13 +8,13 @@ import slick.driver.JdbcProfile
 
 import scala.concurrent.Future
 
-case class ParsedResult(grammar: String, src: String, tree: String, rules: String, rule: String, id: Option[Int] = None)
+case class SavedParseResult(grammar: String, src: String, tree: String = "", rules: String = "", rule: String = "", id: Option[Int] = None)
 
 @ImplementedBy(classOf[ParsedResultsRepositoryImpl])
 trait ParsedResultsRepository {
-  def insert(parsedResult: ParsedResult): Future[Int]
-  def save(parsedResult: ParsedResult): Future[Option[Int]]
-  def load(id: Int): Future[Option[ParsedResult]]
+  def insert(parsedResult: SavedParseResult): Future[Int]
+  def save(parsedResult: SavedParseResult): Future[Option[Int]]
+  def load(id: Int): Future[Option[SavedParseResult]]
 }
 
 @Singleton()
@@ -23,13 +23,13 @@ class ParsedResultsRepositoryImpl @Inject() (protected val dbConfigProvider: Dat
 
   import driver.api._
 
-  def insert(parsedResult: ParsedResult): Future[Int] = db.run { resultsTableQueryInc += parsedResult }
+  def insert(parsedResult: SavedParseResult): Future[Int] = db.run { resultsTableQueryInc += parsedResult }
 
-  def save(parsedResult: ParsedResult): Future[Option[Int]] = db.run {
+  def save(parsedResult: SavedParseResult): Future[Option[Int]] = db.run {
     resultsTableQueryInc.insertOrUpdate(parsedResult)
   }
 
-  def load(id: Int): Future[Option[ParsedResult]] = db.run {
+  def load(id: Int): Future[Option[SavedParseResult]] = db.run {
     resultsTableQuery.filter(_.id === id).result.headOption
   }
 }
@@ -39,7 +39,7 @@ trait ParsedResultsTable {
 
   import driver.api._
 
-  class ParsedResultsTable(tag: Tag) extends Table[ParsedResult](tag, "ParsedResults") {
+  class ParsedResultsTable(tag: Tag) extends Table[SavedParseResult](tag, "ParsedResults") {
     val id: Rep[Int] = column[Int]("id", O.AutoInc, O.PrimaryKey)
     val grammar: Rep[String] = column[String]("grammar")
     val src: Rep[String] = column[String]("src")
@@ -47,7 +47,7 @@ trait ParsedResultsTable {
     val rules: Rep[String] = column[String]("rules")
     val rule: Rep[String] = column[String]("rule")
 
-    def * = (grammar, src, tree, rules, rule, id.?) <> (ParsedResult.tupled, ParsedResult.unapply)
+    def * = (grammar, src, tree, rules, rule, id.?) <> (SavedParseResult.tupled, SavedParseResult.unapply)
   }
 
   lazy protected val resultsTableQuery = TableQuery[ParsedResultsTable]

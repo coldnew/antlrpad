@@ -19,9 +19,14 @@ $(function(){
         var src = $('#src').val();
         var startRuleSel = $('#startRule');
         $.post(url, { grammar: grammar, src: src, rule: startRuleSel.val() }, function(data){
-            loadRules(data.rules, data.rule);
-            draw(getTreeModel(data.tree));
-            $('#grammarError').hide();
+            if (data.tree && data.rules) {
+                loadRules(data.rules, data.rule);
+                draw(getTreeModel(data.tree));
+                $('#grammarError').hide();
+            } else {
+                $('#grammarError').show();
+            }
+
             if (callback) {
                 callback(data.id);
             }

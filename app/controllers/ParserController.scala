@@ -1,13 +1,13 @@
 package controllers
 
 import com.google.inject.{Inject, Singleton}
-import models.{ParseResponseModel, ParseTreeViewModel}
-import play.api.data._
+import models.{ParseResult, ParseTree}
 import play.api.data.Forms._
+import play.api.data._
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.json.Json
-import play.api.mvc.{Action, AnyContent, Controller, Request}
-import repo.{ParsedResult, ParsedResultsRepository}
+import play.api.mvc._
+import repo.{ParsedResultsRepository, SavedParseResult}
 import services.AntlrParser
 
 import scala.concurrent.Future
@@ -18,15 +18,17 @@ class ParserController @Inject() (parser: AntlrParser, val messagesApi: Messages
 
   import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
-  implicit val treeViewModel = Json.writes[ParseTreeViewModel]
-  implicit val responseModel = Json.writes[ParseResponseModel]
-  implicit val parsedResult = Json.writes[ParsedResult]
+  implicit val treeViewModel = Json.writes[ParseTree]
+  implicit val responseModel = Json.writes[ParseResult]
+  implicit val parsedResult = Json.writes[SavedParseResult]
 
-  val form = Form(tuple(
+  case class FormData(src: String, grammar: String, rule: String)
+
+  val form = Form(mapping(
     "src" -> nonEmptyText,
     "grammar" -> nonEmptyText,
     "rule" -> text
-  ))
+  )(FormData.apply)(FormData.unapply))
 
   def load(id: Int) = Action.async {
     repo.load(id).map(_ match {
@@ -35,37 +37,28 @@ class ParserController @Inject() (parser: AntlrParser, val messagesApi: Messages
     })
   }
 
-  type Error = String
-  type Success = (String, String, Seq[String], String, ParseTreeViewModel)
-
-  def parseFromRequest(implicit request: Request[AnyContent]): Either[Error, Success] = {
+  def parseFromRequest(action: ParseResult => Future[ParseResult])(implicit request: Request[AnyContent]): Future[Result] = {
     form.bindFromRequest.fold(
-      formWithErrors => Left(formWithErrors.errorsAsJson.toString()),
+      formWithErrors => Future { BadRequest(formWithErrors.errorsAsJson.toString()) },
       formData => {
-        val (src, grammar, rule) = formData
-        parser.parse(grammar, rule.trim, src) match {
-          case (Some(tree), rules) => Right((grammar, src, rules, rule.trim, tree))
-          case _ => Left("There are errors in grammar, source cannot be parsed")
-        }
+        val result = action(parser.parse(formData.grammar, formData.rule.trim, formData.src))
+        result.map(r => Ok(Json.toJson(r)))
       }
     )
   }
 
-  def parseSrc() = Action { request=>
-    parseFromRequest(request) match {
-      case Left(err) => BadRequest(err)
-      case Right((_, _, rules, rule, tree)) => Ok(Json.toJson(new ParseResponseModel(tree, rules, rule)))
-    }
+  def parseSrc() = Action.async { implicit request=>
+    parseFromRequest(r => Future { r })
   }
 
-  def save() = Action.async { request =>
-    parseFromRequest(request) match {
-      case Left(err) => Future { BadRequest(err) }
-      case Right((grammar, src, rules, rule, tree)) => {
-        repo.save(new ParsedResult(grammar, src, Json.toJson(tree).toString(), rules.mkString(","), rule, None)).map(id => {
-          Ok(Json.toJson(new ParseResponseModel(tree, rules, rule, id)))
-        })
-      }
-    }
+  def save() = Action.async { implicit request =>
+    parseFromRequest(r => repo.save(
+      SavedParseResult(r.grammar,
+        r.source,
+        r.tree.map(t => Json.toJson(t).toString()).getOrElse(""),
+        r.rules.mkString(","),
+        r.rule,
+        None))
+      .map(recId => r.copy(id = recId)))
   }
 }

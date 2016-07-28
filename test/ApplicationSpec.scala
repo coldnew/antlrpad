@@ -36,7 +36,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
       status(home) mustBe BAD_REQUEST
     }
 
-    "give bad request when grammar is incorrect" in {
+    /* "return errors is incorrect" in {
       val home = route(app, FakeRequest(POST, "/api/parse/").withFormUrlEncodedBody(
         ("grammar", "grammar test; \n two: '2'"),
         ("src", "2"),
@@ -44,7 +44,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
       )).get
 
       status(home) mustBe BAD_REQUEST
-    }
+    } */
 
     "parse the result " in {
       val home = route(app, FakeRequest(POST, "/api/parse/").withFormUrlEncodedBody(
