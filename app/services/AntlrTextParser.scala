@@ -1,15 +1,19 @@
 package services
 
-import models.ParseTree
 import org.antlr.v4.runtime.{ANTLRInputStream, CommonTokenStream, ParserRuleContext}
 import org.antlr.v4.tool.{Grammar, GrammarParserInterpreter, LexerGrammar}
 
 import scala.collection.JavaConverters._
+import scalaz._
+import Scalaz._
+
+case class ParseTree(rule: String, text: String, children: Seq[ParseTree])
+case class ParseFailure(errors: Seq[String])
 
 class AntlrTextParser {
-  def parse(src: String, startRule: String, grammar: Grammar, lexerGrammar: LexerGrammar): ParseTree = {
-    val (tree, rulesNames) = parseText(src, startRule, grammar, lexerGrammar)
-    getTreeModel(tree, rulesNames)
+  def parse(src: String, startRule: String)(grammars: ParseGrammarSuccess): \/[ParseFailure, ParseTree] = {
+    val (tree, rulesNames) = parseText(src, startRule, grammars.grammar, grammars.lexerGrammar)
+    getTreeModel(tree, rulesNames).right
   }
 
   private def parseText(src: String, startRule: String, grammar: Grammar, lexerGrammar: LexerGrammar): (ParserRuleContext, Array[String]) = {
@@ -33,6 +37,6 @@ class AntlrTextParser {
       }
     }
 
-    new ParseTree(node.getText, ruleNames(node.getRuleIndex), children)
+    ParseTree(node.getText, ruleNames(node.getRuleIndex), children)
   }
 }
