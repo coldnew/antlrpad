@@ -18,9 +18,11 @@ class ParserController @Inject() (parser: AntlrTextParser, grammarParser: AntlrG
   import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
   implicit val treeResult = Json.writes[ParseTree]
+  implicit val successResult = Json.writes[ParseSuccess]
   implicit val parsedResult = Json.writes[SavedParseResult]
 
   case class FormData(src: String, grammar: String, rule: String)
+  case class ParseSuccess(rules: Seq[String], tree: ParseTree, rule: String)
   case class RequestFailure(error: String)
 
   val form = Form(mapping(
@@ -37,7 +39,7 @@ class ParserController @Inject() (parser: AntlrTextParser, grammarParser: AntlrG
   }
 
   def getResult[L, R](parsedResult: \/[L, R]) = parsedResult match {
-    case \/-(t: ParseTree) => Ok(Json.toJson(t))
+    case \/-(t: ParseSuccess) => Ok(Json.toJson(t))
     case -\/(e: ParseGrammarFailure) => BadRequest(e.errors.mkString(","))
     case _ => BadRequest("Failed")
   }
@@ -46,7 +48,8 @@ class ParserController @Inject() (parser: AntlrTextParser, grammarParser: AntlrG
     val parsedResult = for(
       req <- parseRequest;
       grammars <- grammarParser.parseGrammar(req.grammar);
-      res <- parser.parse(req.src, req.rule)(grammars)
+      tree <- parser.parse(req.src, req.rule)(grammars);
+      res <- ParseSuccess(grammars.rules, tree, req.rule).right
     ) yield res
 
     getResult(parsedResult)
