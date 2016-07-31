@@ -8,7 +8,7 @@ import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.json.Json
 import play.api.mvc._
 import repo.{ParsedResultsRepository, SavedParseResult}
-import services.AntlrParser
+import services.{AntlrParser, ParseError}
 
 import scala.concurrent.Future
 
@@ -18,6 +18,7 @@ class ParserController @Inject() (parser: AntlrParser, val messagesApi: Messages
 
   import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
+  implicit val parseError = Json.writes[ParseError]
   implicit val treeViewModel = Json.writes[ParseTree]
   implicit val responseModel = Json.writes[ParseResult]
   implicit val parsedResult = Json.writes[SavedParseResult]

@@ -1,29 +1,42 @@
 package services
 
-import org.antlr.v4.tool.{Grammar, LexerGrammar}
+import org.antlr.v4.tool.{ANTLRMessage, ANTLRToolListener, Grammar, LexerGrammar}
 import utils.Cached._
 
 object Defaults {
   import utils.InMemoryCache
 
-  implicit lazy val inMemoryCache = new InMemoryCache[Int, (Option[Grammar], Option[LexerGrammar])]()
+  implicit lazy val inMemoryCache = new InMemoryCache[Int, Either[ParseGrammarFailure, ParseGrammarSuccess]]()
 }
+
+case class ParseGrammarSuccess(grammar: Grammar, lexerGrammar: LexerGrammar, rules: Seq[String])
+case class ParseGrammarFailure(errors: Seq[ParseError])
+case class ParseError(message: String, col: Int, pos: Int)
 
 class AntlrGrammarParser {
 
-  def parseGrammar(src: String): (Option[Grammar], Option[LexerGrammar]) = {
-    import Defaults.inMemoryCache
+  import Defaults.inMemoryCache
 
+  implicit def convertError(antlrError: ANTLRMessage): ParseError = ParseError(antlrError.getCause.getMessage, antlrError.charPosition, antlrError.line)
+
+  def parseGrammar(src: String): Either[ParseGrammarFailure, ParseGrammarSuccess] = {
     cache by src.hashCode value {
       val tool = new org.antlr.v4.Tool()
+      var errors = Seq[ParseError]()
+      tool.removeListeners()
+      tool.addListener(new ANTLRToolListener {
+        override def warning(msg: ANTLRMessage): Unit = errors = errors :+ convertError(msg)
+        override def error(msg: ANTLRMessage): Unit = errors = errors :+ convertError(msg)
+        override def info(msg: String): Unit = errors = errors :+ ParseError(msg, 0, 0)
+      })
+
       val grammarRootAst = tool.parseGrammarFromString(src)
-
-      val grammar = Option(tool.createGrammar(grammarRootAst))
-      grammar.foreach(g => tool.process(g, false))
-
-      (grammar, grammar.flatMap(g => Option(g.getImplicitLexer)))
+      if (!grammarRootAst.hasErrors) {
+        val parsedGrammar = tool.createGrammar(grammarRootAst)
+        tool.process(parsedGrammar, false)
+        Right(ParseGrammarSuccess(parsedGrammar, parsedGrammar.getImplicitLexer, parsedGrammar.getRuleNames))
+      }
+      else Left(ParseGrammarFailure(errors))
     }
-
   }
-
 }
