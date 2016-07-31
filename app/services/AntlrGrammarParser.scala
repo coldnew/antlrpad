@@ -17,16 +17,20 @@ case class ParseGrammarFailure(errors: Seq[String])
 
 class AntlrGrammarParser {
 
-  def parseGrammar(src: String): \/[ParseGrammarFailure, ParseGrammarSuccess] = {
-    val tool = new org.antlr.v4.Tool()
-    val grammarRootAst = tool.parseGrammarFromString(src)
+  import Defaults.inMemoryCache
 
-    val parsedGrammar = Option(tool.createGrammar(grammarRootAst))
-    parsedGrammar.foreach(tool.process(_, false))
-    val lexerGrammar = parsedGrammar.flatMap(g => Option(g.getImplicitLexer)) // parsedGrammar.map(_.getImplicitLexer) doesn't work here at returns Some(null)
-    (parsedGrammar, lexerGrammar) match {
-      case (Some(g), Some(lg)) => ParseGrammarSuccess(g, lg, g.getRuleNames).right
-      case _ => ParseGrammarFailure(Seq("Cannot parse grammar")).left
+  def parseGrammar(src: String): \/[ParseGrammarFailure, ParseGrammarSuccess] = {
+    cache by src.hashCode value {
+
+      val tool = new org.antlr.v4.Tool()
+      val grammarRootAst = tool.parseGrammarFromString(src)
+      if (!grammarRootAst.hasErrors) {
+        val parsedGrammar = tool.createGrammar(grammarRootAst)
+        tool.process(parsedGrammar, false)
+        ParseGrammarSuccess(parsedGrammar, parsedGrammar.getImplicitLexer, parsedGrammar.getRuleNames).right
+      }
+      else ParseGrammarFailure(Seq("Cannot parse grammar")).left
+
     }
   }
 }
