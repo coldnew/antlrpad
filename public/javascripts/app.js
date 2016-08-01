@@ -40,8 +40,8 @@ $(function(){
         $.get(loadUrl + id, {}, function(res){
             $('#grammar').val(res.grammar);
             $('#src').val(res.src);
-            draw(getTreeModel(JSON.parse(res.tree)));
-            loadRules(res.rules.split(','), res.rule);
+            draw(getTreeModel(res.tree));
+            loadRules(res.rules, res.rule);
         });
     }
 
