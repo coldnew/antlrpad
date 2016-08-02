@@ -4,7 +4,7 @@ Similar to JSFiddle, CodePen and other online playgrounds for all kinds of langu
 test your Antlr4 grammars, parse expressions and build parse trees, see errors and warnings and analyse grammar performance.
 
 # Roadmap
-- [ ] Share parsing result (via link)
+- [x] Share parsing result (via link)
 - [ ] Return and highlight errors (both grammar and parsed tree)
 - [ ] Grammar file syntax highlight
 - [ ] Add separate lexical grammar support
