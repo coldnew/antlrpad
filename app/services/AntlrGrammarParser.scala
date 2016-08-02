@@ -11,13 +11,13 @@ object Defaults {
 
 case class ParseGrammarSuccess(grammar: Grammar, lexerGrammar: LexerGrammar, rules: Seq[String])
 case class ParseGrammarFailure(errors: Seq[ParseError])
-case class ParseError(message: String, col: Int, pos: Int)
+case class ParseError(message: String, col: Int, line: Int)
 
 class AntlrGrammarParser {
 
   import Defaults.inMemoryCache
 
-  implicit def convertError(antlrError: ANTLRMessage): ParseError = ParseError(antlrError.getCause.getMessage, antlrError.charPosition, antlrError.line)
+  implicit def convertError(antlrError: ANTLRMessage): ParseError = ParseError(antlrError.getArgs.mkString(","), antlrError.charPosition, antlrError.line)
 
   def parseGrammar(src: String): Either[ParseGrammarFailure, ParseGrammarSuccess] = {
     cache by src.hashCode value {
