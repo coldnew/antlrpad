@@ -15,7 +15,7 @@ $(function(){
     }
 
     function parseExpression(url, callback) {
-        var grammar = $('#grammar').val();
+        var grammar = editor.getValue();
         var src = $('#src').val();
         var startRuleSel = $('#startRule');
         $.post(url, { grammar: grammar, src: src, rule: startRuleSel.val() }, function(data){
@@ -38,7 +38,7 @@ $(function(){
 
     function loadTree(id) {
         $.get(loadUrl + id, {}, function(res){
-            $('#grammar').val(res.grammar);
+            editor.setValue(res.grammar);
             $('#src').val(res.src);
             draw(getTreeModel(JSON.parse(res.tree)));
             loadRules(res.rules.split(','), res.rule);

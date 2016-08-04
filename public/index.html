@@ -55,7 +55,7 @@
                     <select class="form-control m10b" id="startRule">
 
                     </select>
-                    <textarea id="grammar" class="form-control">
+                    <div id="grammar" class="form-control">
 grammar calculator;
 
 equation
@@ -229,7 +229,7 @@ WS
    : [ \r\n\t] + -> channel (HIDDEN)
    ;
 
-                    </textarea>
+                    </div>
                 </div>
             </div>
             <div class="col-md-6">
@@ -243,5 +243,12 @@ WS
     <script src="javascripts/jstree.min.js"></script>
 
     <script src="javascripts/app.js"></script>
+
+    <script src="/javascripts/ace/ace.js" type="text/javascript" charset="utf-8"></script>
+    <script>
+        var editor = ace.edit("grammar");
+        editor.setTheme("ace/theme/chrome");
+        editor.getSession().setMode("ace/mode/antlr4");
+    </script>
 </body>
 </html>
