@@ -1,6 +1,6 @@
 package services
 
-import org.antlr.v4.tool.{ANTLRMessage, ANTLRToolListener, Grammar, LexerGrammar}
+import org.antlr.v4.tool._
 import utils.Cached._
 
 object Defaults {
@@ -17,11 +17,16 @@ class AntlrGrammarParser {
 
   import Defaults.inMemoryCache
 
-  implicit def convertError(antlrError: ANTLRMessage): ParseError = ParseError(antlrError.getArgs.mkString(","), antlrError.charPosition, antlrError.line)
+  def convertError(antlrError: ANTLRMessage)(implicit errorManager: ErrorManager): ParseError = {
+    val msg = errorManager.getMessageTemplate(antlrError).render()
+    ParseError(msg, antlrError.charPosition, antlrError.line)
+  }
 
   def parseGrammar(src: String): Either[ParseGrammarFailure, ParseGrammarSuccess] = {
     cache by src.hashCode value {
       val tool = new org.antlr.v4.Tool()
+      implicit val errorManager = tool.errMgr
+
       var errors = Seq[ParseError]()
       tool.removeListeners()
       tool.addListener(new ANTLRToolListener {
