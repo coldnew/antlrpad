@@ -34,7 +34,9 @@ class AntlrGrammarParser {
       if (!grammarRootAst.hasErrors) {
         val parsedGrammar = tool.createGrammar(grammarRootAst)
         tool.process(parsedGrammar, false)
-        Right(ParseGrammarSuccess(parsedGrammar, parsedGrammar.getImplicitLexer, parsedGrammar.getRuleNames))
+
+        if (errors.isEmpty) Right(ParseGrammarSuccess(parsedGrammar, parsedGrammar.getImplicitLexer, parsedGrammar.getRuleNames))
+        else Left(ParseGrammarFailure(errors))
       }
       else Left(ParseGrammarFailure(errors))
     }
