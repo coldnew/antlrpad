@@ -5,8 +5,9 @@ test your Antlr4 grammars, parse expressions and build parse trees, see errors a
 
 # Roadmap
 - [x] Share parsing result (via link)
-- [ ] Return and highlight errors (both grammar and parsed tree)
-- [ ] Grammar file syntax highlight
+- [X] Return and highlight grammar errors
+- [ ] Return and highlight expression errors
+- [X] Grammar file syntax highlight
 - [ ] Add separate lexical grammar support
 - [ ] Add set of "test" grammars (C#, Java, Python)
 - [ ] UI (Angular?)
