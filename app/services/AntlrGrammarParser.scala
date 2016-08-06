@@ -34,16 +34,15 @@ class AntlrGrammarParser {
         override def error(msg: ANTLRMessage): Unit = errors = errors :+ convertError(msg)
         override def info(msg: String): Unit = errors = errors :+ ParseError(msg, 0, 0)
       })
-
+      
       val grammarRootAst = tool.parseGrammarFromString(src)
-      if (!grammarRootAst.hasErrors) {
-        val parsedGrammar = tool.createGrammar(grammarRootAst)
-        tool.process(parsedGrammar, false)
+      val parsedGrammar = tool.createGrammar(grammarRootAst)
+      tool.process(parsedGrammar, false)
 
-        if (errors.isEmpty) Right(ParseGrammarSuccess(parsedGrammar, parsedGrammar.getImplicitLexer, parsedGrammar.getRuleNames))
-        else Left(ParseGrammarFailure(errors))
-      }
-      else Left(ParseGrammarFailure(errors))
+      if (errors.isEmpty)
+        Right(ParseGrammarSuccess(parsedGrammar, parsedGrammar.getImplicitLexer, parsedGrammar.getRuleNames))
+      else
+        Left(ParseGrammarFailure(errors))
     }
   }
 }
