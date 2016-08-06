@@ -11,3 +11,4 @@ test your Antlr4 grammars, parse expressions and build parse trees, see errors a
 - [ ] Add separate lexical grammar support
 - [ ] Add set of "test" grammars (C#, Java, Python)
 - [ ] UI (Angular?)
+- [ ] Generate ace.js syntax highlight for source expression based on lexer grammar
