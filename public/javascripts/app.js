@@ -31,11 +31,11 @@ $(function(){
         var src = $('#src').val();
         var startRuleSel = $('#startRule');
         $.post(url, { grammar: grammar, src: src, rule: startRuleSel.val() }, function(data){
-            if (data.tree && data.rules) {
-                loadRules(data.rules, data.rule);
+            if (data.tree && data.parsedGrammar.rules) {
+                loadRules(data.parsedGrammar.rules, data.rule);
                 draw(getTreeModel(data.tree));
                 $('#grammarError').hide();
-                setErrors([]);
+                setErrors(data.parsedGrammar.warnings);
             } else {
                 $('#grammarError').show();
                 setErrors(data.errors);

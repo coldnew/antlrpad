@@ -5,7 +5,7 @@ import models.{Failure, ParseTree, Success}
 import play.api.data.Forms._
 import play.api.data._
 import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json._
 import play.api.mvc._
 import repo.{ParsedResultsRepository, SavedParseResult}
 import services.{ParseMessage, _}
@@ -22,10 +22,16 @@ class ParserController @Inject() (grammarParser: AntlrGrammarParser,
 
   import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
+  implicit lazy val parseMessageWriter = Json.writes[ParseMessage]
+  implicit lazy val parseTextSuccess = new Writes[ParseGrammarSuccess]{
+    override def writes(o: ParseGrammarSuccess): JsValue = {
+      Json.obj("rules" -> o.rules, "warnings" -> Json.toJson(o.warnings))
+    }
+  }
+
   implicit lazy val savedParseResultWriter = Json.writes[SavedParseResult]
   implicit lazy val parseTreeWriter = Json.writes[ParseTree]
   implicit lazy val successWriter = Json.writes[ParseTextSuccess]
-  implicit lazy val parseMessageWriter = Json.writes[ParseMessage]
   implicit lazy val parseGrammarFailureWriter = Json.writes[ParseGrammarFailure]
 
   case class RequestData(src: String, grammar: String, rule: String) extends Success
@@ -68,7 +74,7 @@ class ParserController @Inject() (grammarParser: AntlrGrammarParser,
     val res = for {
       req   <-  getRequestData
       grm   <-  grammarParser.parseGrammar(req.grammar)
-      exp   <-  parser.parse(req.src, req.rule, grm.grammar, grm.lexerGrammar)
+      exp   <-  parser.parse(req.src, req.rule, grm)
     } yield exp
 
     getResult(res)
@@ -77,9 +83,9 @@ class ParserController @Inject() (grammarParser: AntlrGrammarParser,
   def save() = Action.async { implicit request =>
     val saveRes = for {
       req   <-  getRequestData
-      id    =   repo.save(SavedParseResult(req.grammar, req.src, "", "", "", None))
+      id    =   repo.save(SavedParseResult(req.grammar, req.src, None))
       grm   <-  grammarParser.parseGrammar(req.grammar)
-      exp   =   parser.parse(req.src, req.rule, grm.grammar, grm.lexerGrammar)
+      exp   =   parser.parse(req.src, req.rule, grm)
     } yield SaveRequestResult(id, exp)
 
     saveRes.fold(

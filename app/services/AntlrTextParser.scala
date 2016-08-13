@@ -10,15 +10,15 @@ import models.{Failure, Success}
 import scalaz.\/
 import scalaz.Scalaz._
 
-case class ParseTextSuccess(tree: ParseTree, rules: Seq[String]) extends Success
+case class ParseTextSuccess(tree: ParseTree, parsedGrammar: ParseGrammarSuccess) extends Success
 case class ParseTextFailure() extends Failure
 
 class AntlrTextParser {
-  def parse(src: String, startRule: String, grammar: Grammar, lexerGrammar: LexerGrammar): ParseTextFailure \/ ParseTextSuccess = {
-    val (tree, rulesNames) = parseText(src, startRule, grammar, lexerGrammar)
+  def parse(src: String, startRule: String, parsedGrammar: ParseGrammarSuccess): ParseTextFailure \/ ParseTextSuccess = {
+    val (tree, rulesNames) = parseText(src, startRule, parsedGrammar.grammar, parsedGrammar.lexerGrammar)
     val treeModel = getTreeModel(tree, rulesNames)
 
-    ParseTextSuccess(treeModel, rulesNames).right
+    ParseTextSuccess(treeModel, parsedGrammar).right
   }
 
   private def parseText(src: String, startRule: String, grammar: Grammar, lexerGrammar: LexerGrammar): (ParserRuleContext, Array[String]) = {
