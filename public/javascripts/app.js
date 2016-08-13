@@ -19,7 +19,7 @@ $(function(){
         return {
             column: e.col,
             row: e.line - 1,
-            type: "error",
+            type: e.errType,
             text: e.message
         }});
 
@@ -93,4 +93,8 @@ $(function(){
             window.location = '/#' + id;
         });
     });
+
+    var editor = ace.edit("grammar");
+    editor.setTheme("ace/theme/chrome");
+    editor.getSession().setMode("ace/mode/antlr4");
 })

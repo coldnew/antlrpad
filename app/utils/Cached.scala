@@ -16,7 +16,6 @@ class InMemoryCache[TKey, TValue] extends CacheStorage[TKey, TValue] {
   }
 
   override def get(key: TKey): Option[TValue] = storage.get(key)
-
   override def hasKey(key: TKey): Boolean = storage.get(key).isDefined
 }
 

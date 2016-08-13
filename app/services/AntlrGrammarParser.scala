@@ -1,48 +1,36 @@
 package services
 
+import models.{Failure, Success}
 import org.antlr.v4.tool._
 import utils.Cached._
+import utils.InMemoryCache
 
-object Defaults {
-  import utils.InMemoryCache
+import scalaz.\/
+import scalaz.Scalaz._
 
-  implicit lazy val inMemoryCache = new InMemoryCache[Int, Either[ParseGrammarFailure, ParseGrammarSuccess]]()
-}
-
-case class ParseGrammarSuccess(grammar: Grammar, lexerGrammar: LexerGrammar, rules: Seq[String])
-case class ParseGrammarFailure(errors: Seq[ParseError])
-case class ParseError(message: String, col: Int, line: Int)
+case class ParseGrammarSuccess(grammar: Grammar, lexerGrammar: LexerGrammar, rules: Seq[String], warnings: Seq[ParseMessage]) extends Success
+case class ParseGrammarFailure(errors: Seq[ParseMessage]) extends Failure
 
 class AntlrGrammarParser {
 
-  import Defaults.inMemoryCache
+  implicit lazy val inMemoryCache = new InMemoryCache[Int, ParseGrammarFailure \/ ParseGrammarSuccess]()
 
-  def convertError(antlrError: ANTLRMessage)(implicit errorManager: ErrorManager): ParseError = {
-    val msg = errorManager.getMessageTemplate(antlrError).render()
-    ParseError(msg, antlrError.charPosition, antlrError.line)
-  }
-
-  def parseGrammar(src: String): Either[ParseGrammarFailure, ParseGrammarSuccess] = {
+  def parseGrammar(src: String): ParseGrammarFailure \/ ParseGrammarSuccess = {
     cache by src.hashCode value {
       val tool = new org.antlr.v4.Tool()
-      implicit val errorManager = tool.errMgr
 
-      var errors = Seq[ParseError]()
+      val errorListener = new InternalErrorListener(tool.errMgr)
       tool.removeListeners()
-      tool.addListener(new ANTLRToolListener {
-        override def warning(msg: ANTLRMessage): Unit = errors = errors :+ convertError(msg)
-        override def error(msg: ANTLRMessage): Unit = errors = errors :+ convertError(msg)
-        override def info(msg: String): Unit = errors = errors :+ ParseError(msg, 0, 0)
-      })
-      
-      val grammarRootAst = tool.parseGrammarFromString(src)
-      val parsedGrammar = tool.createGrammar(grammarRootAst)
-      tool.process(parsedGrammar, false)
+      tool.addListener(errorListener)
 
-      if (errors.isEmpty)
-        Right(ParseGrammarSuccess(parsedGrammar, parsedGrammar.getImplicitLexer, parsedGrammar.getRuleNames))
+      val grammarRootAst = tool.parseGrammarFromString(src)
+      val grammar = tool.createGrammar(grammarRootAst)
+      tool.process(grammar, false)
+
+      if (grammarRootAst.hasErrors)
+        ParseGrammarFailure(errorListener.errors).left
       else
-        Left(ParseGrammarFailure(errors))
+        ParseGrammarSuccess(grammar, grammar.getImplicitLexer, grammar.getRuleNames, errorListener.warnings).right
     }
   }
 }

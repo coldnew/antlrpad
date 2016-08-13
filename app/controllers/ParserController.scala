@@ -1,35 +1,45 @@
 package controllers
 
 import com.google.inject.{Inject, Singleton}
-import models.{ParseResult, ParseTree}
+import models.{Failure, ParseResult, Success}
 import play.api.data.Forms._
 import play.api.data._
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.json.Json
 import play.api.mvc._
 import repo.{ParsedResultsRepository, SavedParseResult}
-import services.{AntlrParser, ParseError}
+import services.{AntlrGrammarParser, AntlrTextParser}
 
 import scala.concurrent.Future
-
+import scalaz.{-\/, \/, \/-}
+import scalaz.Scalaz._
 
 @Singleton
-class ParserController @Inject() (parser: AntlrParser, val messagesApi: MessagesApi, private val repo: ParsedResultsRepository) extends Controller with I18nSupport {
+class ParserController @Inject() (grammarParser: AntlrGrammarParser,
+                                  parser: AntlrTextParser,
+                                  private val repo: ParsedResultsRepository,
+                                  val messagesApi: MessagesApi) extends Controller with I18nSupport {
 
   import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
-  implicit val parseError = Json.writes[ParseError]
-  implicit val treeViewModel = Json.writes[ParseTree]
-  implicit val responseModel = Json.writes[ParseResult]
-  implicit val parsedResult = Json.writes[SavedParseResult]
+  implicit lazy val savedParseResultWriter = Json.writes[SavedParseResult]
 
-  case class FormData(src: String, grammar: String, rule: String)
+  case class RequestData(src: String, grammar: String, rule: String) extends Success
+  case class RequestFailure(error: String) extends Failure
+  case class SaveRequestResult(saveRequst: Future[Option[Int]], result: Failure \/ Success)
 
   val form = Form(mapping(
     "src" -> nonEmptyText,
     "grammar" -> nonEmptyText,
     "rule" -> text
-  )(FormData.apply)(FormData.unapply))
+  )(RequestData.apply)(RequestData.unapply))
+
+  def getRequestData(implicit request: Request[AnyContent]): RequestFailure \/ RequestData  = {
+    form.bindFromRequest.fold(
+      formWithErrors => RequestFailure(formWithErrors.errorsAsJson.toString()).left,
+      formData => formData.right
+    )
+  }
 
   def load(id: Int) = Action.async {
     repo.load(id).map(_ match {
@@ -38,28 +48,35 @@ class ParserController @Inject() (parser: AntlrParser, val messagesApi: Messages
     })
   }
 
-  def parseFromRequest(action: ParseResult => Future[ParseResult])(implicit request: Request[AnyContent]): Future[Result] = {
-    form.bindFromRequest.fold(
-      formWithErrors => Future { BadRequest(formWithErrors.errorsAsJson.toString()) },
-      formData => {
-        val result = action(parser.parse(formData.grammar, formData.rule.trim, formData.src))
-        result.map(r => Ok(Json.toJson(r)))
-      }
-    )
+  def getResult(res: Failure \/ Success): Result = {
+    res match {
+      case -\/(failure: RequestFailure) => BadRequest(failure.error)
+      case -\/(failure: Failure) => Ok("failed")
+      case \/-(success: Success) => Ok("success")
+    }
   }
 
-  def parseSrc() = Action.async { implicit request=>
-    parseFromRequest(r => Future { r })
+  def parseSrc() = Action { implicit request=>
+    val res = for {
+      req   <-  getRequestData
+      grm   <-  grammarParser.parseGrammar(req.grammar)
+      exp   <-  parser.parse(req.src, req.rule, grm.grammar, grm.lexerGrammar)
+    } yield exp
+
+    getResult(res)
   }
 
   def save() = Action.async { implicit request =>
-    parseFromRequest(r => repo.save(
-      SavedParseResult(r.grammar,
-        r.source,
-        r.tree.map(t => Json.toJson(t).toString()).getOrElse(""),
-        r.rules.mkString(","),
-        r.rule,
-        None))
-      .map(recId => r.copy(id = recId)))
+    val saveRes = for {
+      req   <-  getRequestData
+      id    =   repo.save(SavedParseResult(req.grammar, req.src, "", "", "", None))
+      grm   <-  grammarParser.parseGrammar(req.grammar)
+      exp   =   parser.parse(req.src, req.rule, grm.grammar, grm.lexerGrammar)
+    } yield SaveRequestResult(id, exp)
+
+    saveRes.fold(
+      err => Future.successful(getResult(err.left)),
+      res => res.saveRequst.map(id => getResult(res.result))
+    )
   }
 }
