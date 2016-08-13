@@ -1,5 +1,6 @@
 package models
 
+import play.api.libs.json.{JsValue, Json}
 import services.ParseMessage
 
 case class ParseTree(rule: String, text: String, children: Seq[ParseTree])

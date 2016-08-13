@@ -1,14 +1,14 @@
 package controllers
 
 import com.google.inject.{Inject, Singleton}
-import models.{Failure, ParseResult, Success}
+import models.{Failure, ParseResult, ParseTree, Success}
 import play.api.data.Forms._
 import play.api.data._
 import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.libs.json.Json
+import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import play.api.mvc._
 import repo.{ParsedResultsRepository, SavedParseResult}
-import services.{AntlrGrammarParser, AntlrTextParser}
+import services.{ParseMessage, _}
 
 import scala.concurrent.Future
 import scalaz.{-\/, \/, \/-}
@@ -23,6 +23,10 @@ class ParserController @Inject() (grammarParser: AntlrGrammarParser,
   import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
   implicit lazy val savedParseResultWriter = Json.writes[SavedParseResult]
+  implicit lazy val parseTreeWriter = Json.writes[ParseTree]
+  implicit lazy val successWriter = Json.writes[ParseTextSuccess]
+  implicit lazy val parseMessageWriter = Json.writes[ParseMessage]
+  implicit lazy val parseGrammarFailureWriter = Json.writes[ParseGrammarFailure]
 
   case class RequestData(src: String, grammar: String, rule: String) extends Success
   case class RequestFailure(error: String) extends Failure
@@ -42,17 +46,18 @@ class ParserController @Inject() (grammarParser: AntlrGrammarParser,
   }
 
   def load(id: Int) = Action.async {
-    repo.load(id).map(_ match {
+    repo.load(id).map {
       case Some(record) => Ok(Json.toJson(record))
       case None => NotFound("Cannot find parsed result")
-    })
+    }
   }
 
   def getResult(res: Failure \/ Success): Result = {
     res match {
       case -\/(failure: RequestFailure) => BadRequest(failure.error)
-      case -\/(failure: Failure) => Ok("failed")
-      case \/-(success: Success) => Ok("success")
+      case -\/(failure: ParseGrammarFailure) => Ok(Json.toJson(failure))
+      case \/-(success: ParseTextSuccess) => Ok(Json.toJson(success))
+      case _ => BadRequest("Cannot process result now")
     }
   }
 
