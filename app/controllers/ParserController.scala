@@ -1,18 +1,18 @@
 package controllers
 
 import com.google.inject.{Inject, Singleton}
-import models.{Failure, ParseResult, ParseTree, Success}
+import models.{Failure, ParseTree, Success}
 import play.api.data.Forms._
 import play.api.data._
 import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
+import play.api.libs.json.{JsObject, Json}
 import play.api.mvc._
 import repo.{ParsedResultsRepository, SavedParseResult}
 import services.{ParseMessage, _}
 
 import scala.concurrent.Future
-import scalaz.{-\/, \/, \/-}
 import scalaz.Scalaz._
+import scalaz.{-\/, \/, \/-}
 
 @Singleton
 class ParserController @Inject() (grammarParser: AntlrGrammarParser,
@@ -30,7 +30,7 @@ class ParserController @Inject() (grammarParser: AntlrGrammarParser,
 
   case class RequestData(src: String, grammar: String, rule: String) extends Success
   case class RequestFailure(error: String) extends Failure
-  case class SaveRequestResult(saveRequst: Future[Option[Int]], result: Failure \/ Success)
+  case class SaveRequestResult(saveRequest: Future[Option[Int]], result: Failure \/ Success)
 
   val form = Form(mapping(
     "src" -> nonEmptyText,
@@ -52,11 +52,14 @@ class ParserController @Inject() (grammarParser: AntlrGrammarParser,
     }
   }
 
-  def getResult(res: Failure \/ Success): Result = {
+  def getResult(res: Failure \/ Success, id: Option[Int] = None): Result = {
     res match {
       case -\/(failure: RequestFailure) => BadRequest(failure.error)
       case -\/(failure: ParseGrammarFailure) => Ok(Json.toJson(failure))
-      case \/-(success: ParseTextSuccess) => Ok(Json.toJson(success))
+      case \/-(success: ParseTextSuccess) => {
+        val json = Json.toJson(success).as[JsObject] + ("id" -> Json.toJson(id))
+        Ok(json)
+      }
       case _ => BadRequest("Cannot process result now")
     }
   }
@@ -81,7 +84,7 @@ class ParserController @Inject() (grammarParser: AntlrGrammarParser,
 
     saveRes.fold(
       err => Future.successful(getResult(err.left)),
-      res => res.saveRequst.map(id => getResult(res.result))
+      res => res.saveRequest.map(id => getResult(res.result, id))
     )
   }
 }
