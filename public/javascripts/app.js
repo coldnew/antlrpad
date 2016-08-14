@@ -14,7 +14,7 @@ $(function(){
         startRuleSel.val(rule);
     }
 
-    function setErrors(errors) {
+    function showGrammarErrors(errors) {
         var errorNotifications = errors.map(function(e) {
         return {
             column: e.col,
@@ -26,6 +26,17 @@ $(function(){
         editor.getSession().setAnnotations(errorNotifications);
     }
 
+    function showParseMessages(messages) {
+        if (messages.length == 0) {
+            $('#parseMessages').hide();
+        }
+        else
+        {
+            var msg = messages.map(m => "line " + m.line + ", col: " + m.col + " : " + m.message).join("<br>");
+            $('#parseMessages').text(msg).show();
+        }
+    }
+
     function parseExpression(url, callback) {
         var grammar = editor.getValue();
         var src = $('#src').val();
@@ -35,10 +46,11 @@ $(function(){
                 loadRules(data.parsedGrammar.rules, data.rule);
                 draw(getTreeModel(data.tree));
                 $('#grammarError').hide();
-                setErrors(data.parsedGrammar.warnings);
+                showGrammarErrors(data.parsedGrammar.warnings);
+                showParseMessages(data.messages);
             } else {
                 $('#grammarError').show();
-                setErrors(data.errors);
+                showGrammarErrors(data.errors);
                 draw(null);
             }
 

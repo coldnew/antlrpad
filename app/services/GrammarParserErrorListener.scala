@@ -3,14 +3,7 @@ package services
 import org.antlr.v4.tool.{ANTLRMessage, ANTLRToolListener, ErrorManager}
 import scala.collection.mutable
 
-case class ParseMessage(message: String, errType: String, col: Int, line: Int)
-object ParseMessage {
-  val Error = "error"
-  val Warning = "warning"
-  val Info = "info"
-}
-
-class InternalErrorListener(val errorManager: ErrorManager) extends ANTLRToolListener {
+class GrammarParserErrorListener(val errorManager: ErrorManager) extends ANTLRToolListener {
   private val allMessages = mutable.MutableList[ParseMessage]()
 
   def convertError(antlrError: ANTLRMessage, errType: String): ParseMessage = {

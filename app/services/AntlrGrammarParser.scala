@@ -19,7 +19,7 @@ class AntlrGrammarParser {
     cache by src.hashCode value {
       val tool = new org.antlr.v4.Tool()
 
-      val errorListener = new InternalErrorListener(tool.errMgr)
+      val errorListener = new GrammarParserErrorListener(tool.errMgr)
       tool.removeListeners()
       tool.addListener(errorListener)
 
