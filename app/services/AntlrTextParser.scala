@@ -46,6 +46,6 @@ class AntlrTextParser {
       }
     }
 
-    new ParseTree(node.getText, ruleNames(node.getRuleIndex), children)
+    ParseTree(node.getText, ruleNames(node.getRuleIndex), children, node.exception != null)
   }
 }

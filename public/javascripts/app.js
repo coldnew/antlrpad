@@ -93,7 +93,12 @@ $(function(){
             children.push(getTreeModel(tree.children[c]));
         }
 
-        return { text: tree.rule + ': ' + tree.text, children: children, state: { opened: true } }
+        var node = { text: tree.rule + ': ' + tree.text, children: children, state: { opened: true }, icon: false };
+        if (tree.hasError) {
+            node.icon = "glyphicon glyphicon-remove red";
+        }
+
+        return node;
     }
 
     $('#parse').click(function() {
