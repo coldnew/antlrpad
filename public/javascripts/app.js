@@ -32,7 +32,7 @@ $(function(){
         }
         else
         {
-            var msg = messages.map(m => "line " + m.line + ", col: " + m.col + " : " + m.message).join("<br>");
+            var msg = messages.map(function(m) { return "line " + m.line + ", col: " + m.col + " : " + m.message; }).join("<br>");
             $('#parseMessages').text(msg).show();
         }
     }
