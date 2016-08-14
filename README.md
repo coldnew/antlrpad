@@ -7,7 +7,7 @@ test your Antlr4 grammars, parse expressions and build parse trees, see errors a
 - [x] Share parsing result (via link)
 - [X] Return and highlight grammar errors
 - [X] Return and expression parsing errors
-- [ ] Show parsing errors in the parse tree
+- [X] Show parsing errors in the parse tree
 - [X] Grammar file syntax highlight
 - [ ] Add separate lexical grammar support
 - [ ] Add set of "test" grammars (C#, Java, Python)
