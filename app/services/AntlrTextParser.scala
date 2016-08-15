@@ -15,10 +15,10 @@ case class ParseTextFailure() extends Failure
 
 class AntlrTextParser {
   def parse(src: String, startRule: String, parsedGrammar: ParseGrammarSuccess): ParseTextFailure \/ ParseTextSuccess = {
-    val (tree, rulesNames, errors) = parseText(src, startRule, parsedGrammar.grammar, parsedGrammar.lexerGrammar)
+    val (tree, rulesNames, rule, errors) = parseText(src, startRule, parsedGrammar.grammar, parsedGrammar.lexerGrammar)
     val treeModel = getTreeModel(tree, rulesNames)
 
-    ParseTextSuccess(treeModel, startRule, errors, parsedGrammar).right
+    ParseTextSuccess(treeModel, rule, errors, parsedGrammar).right
   }
 
   private def parseText(src: String, startRule: String, grammar: Grammar, lexerGrammar: LexerGrammar) = {
@@ -36,7 +36,7 @@ class AntlrTextParser {
 
     val tree = parser.parse(startRuleIndex)
 
-    (tree, ruleNames, errorListener.errors)
+    (tree, ruleNames, ruleNames(startRuleIndex), errorListener.errors)
   }
 
   private def getTreeModel(node: ParserRuleContext, ruleNames: Array[String]): ParseTree = {
