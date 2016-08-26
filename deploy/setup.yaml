@@ -1,0 +1,7 @@
+---
+
+- hosts: web
+
+  roles:
+    - role: dockerhost
+      become: yes

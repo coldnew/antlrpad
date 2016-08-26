@@ -1,0 +1,25 @@
+---
+
+- hosts: web
+
+  tasks:
+  - name: build and package tar file
+    local_action: shell sbt universal:packageZipTarball
+
+  - name: build docker image locally
+    local_action: shell docker build -t aleksys/antlrpad .
+
+  - name: push image
+    local_action: shell docker push aleksys/antlrpad
+
+  - name: recreate container
+    docker_container:
+      name: antlrpad
+      pull: true
+      image: aleksys/antlrpad
+      command: [ "-Dplay.crypto.secret=e9a7825e-4144-11e6-9475-f45c89b0e36f", "-Dplay.evolutions.db.default.autoApply=true", "-J-Xmx64m" ]
+      state: started
+      recreate: yes
+      api_version: 1.19
+      ports:
+        - "9000:9000"

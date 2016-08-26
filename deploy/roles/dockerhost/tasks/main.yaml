@@ -1,0 +1,7 @@
+---
+
+- name: install pip
+  apt: name=python-pip update_cache=yes
+
+- name: install docker_container dependencies
+  pip: name=docker-py
