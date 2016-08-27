@@ -60,7 +60,13 @@
                     <select class="form-control m10b" id="startRule">
 
                     </select>
-                    <div id="grammar" class="form-control">grammar calculator;
+                    <ul class="nav nav-tabs" role="tablist">
+                        <li role="presentation" class="active"><a href="#grammarTab" role="tab" data-toggle="tab">Grammar</a></li>
+                        <li role="presentation"><a href="#lexerTab" role="tab" data-toggle="tab">Lexer</a></li>
+                    </ul>
+                    <div class="tab-content">
+                        <div role="tabpanel" class="tab-pane active" id="grammarTab">
+                            <div id="grammar">grammar calculator;
 
 equation
    : expression relop expression
@@ -233,6 +239,11 @@ WS
    : [ \r\n\t] + -> channel (HIDDEN)
    ;
 
+                    </div>
+                        </div>
+                        <div role="tabpanel" class="tab-pane" id="lexerTab">
+                            <div id="lexer">lexer grammar test;</div>
+                        </div>
                     </div>
                 </div>
             </div>

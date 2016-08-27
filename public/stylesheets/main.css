@@ -1,4 +1,4 @@
-#grammar {
+#grammar, #lexer {
     min-height: 500px;
 }
 

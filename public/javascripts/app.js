@@ -122,7 +122,13 @@ $(function(){
         }, 1000);
     });
 
-    var editor = ace.edit("grammar");
-    editor.setTheme("ace/theme/chrome");
-    editor.getSession().setMode("ace/mode/antlr4");
+    function initEditor(elId) {
+        var editor = ace.edit(elId);
+        editor.setTheme("ace/theme/chrome");
+        editor.getSession().setMode("ace/mode/antlr4");
+    };
+
+
+    initEditor("grammar");
+    initEditor("lexer")
 })
