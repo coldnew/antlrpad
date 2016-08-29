@@ -6,6 +6,7 @@ import org.antlr.v4.tool._
 import utils.Cached._
 import utils.InMemoryCache
 
+import scala.util.Try
 import scalaz.\/
 import scalaz.Scalaz._
 
@@ -25,20 +26,23 @@ class AntlrGrammarParser {
       tool.addListener(errorListener)
 
       val grammar = parseGrammar(src, tool)
-      val lexerGrammar = lexer.map(lgSrc => {
-        val lg = parseGrammar(lgSrc, tool).asInstanceOf[LexerGrammar]
+      val lexerGrammar = lexer
+      .map(_.trim)
+      .filter(!_.isEmpty)
+      .flatMap(lexerSrc => Try {
+        val lg = parseGrammar(lexerSrc, tool).asInstanceOf[LexerGrammar]
         tool.process(lg, false)
         grammar.importVocab(lg)
 
         lg
-      }).getOrElse(grammar.implicitLexer)
+      }.toOption)
 
       tool.process(grammar, false)
 
       if (errorListener.errors.nonEmpty)
         ParseGrammarFailure(errorListener.all).left
       else
-        ParseGrammarSuccess(grammar, lexerGrammar, grammar.getRuleNames, errorListener.warnings).right
+        ParseGrammarSuccess(grammar, lexerGrammar.getOrElse(grammar.getImplicitLexer), grammar.getRuleNames, errorListener.warnings).right
     //}
   }
 

@@ -89,7 +89,7 @@ App.prototype.parseExpression = function(url, callback) {
             self.draw(null);
         }
 
-        if (callback) {
+        if (callback && data.id) {
             callback(data.id);
         }
 
@@ -100,14 +100,11 @@ App.prototype.parseExpression = function(url, callback) {
 
 App.prototype.load = function(id) {
     var self = this;
-    $.get(loadUrl + id, {}, function(res){
+    $.get(self.loadUrl + id, {}, function(res){
         self.parserEditor.setValue(res.grammar);
+        self.lexerEditor.setValue(res.lexer);
         $('#src').val(res.src);
-        if (res.tree) {
-            self.draw(getTreeModel(JSON.parse(res.tree)));
-        }
-
-        self.loadRules(res.rules.split(','), res.rule);
+//        self.loadRules(res.rules.split(','), res.rule);
     });
 };
 

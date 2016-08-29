@@ -29,8 +29,7 @@ class AntlrTextParser {
     val ruleNames = grammar.getRuleNames()
 
     val errorListener = new TextParserErrorListener()
-    val atn = new ATNDeserializer().deserialize(ATNSerializer.getSerializedAsChars(grammar.getATN()))
-    val parser = new GrammarParserInterpreter(grammar, atn, tokens)
+    val parser = new GrammarParserInterpreter(grammar, grammar.getATN, tokens)
     parser.removeErrorListeners()
     parser.addErrorListener(errorListener)
 

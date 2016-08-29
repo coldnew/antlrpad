@@ -8,7 +8,7 @@ import slick.driver.JdbcProfile
 
 import scala.concurrent.Future
 
-case class SavedParseResult(grammar: String, src: String, id: Option[Int] = None)
+case class SavedParseResult(grammar: String, lexer: String, src: String, id: Option[Int] = None)
 
 @ImplementedBy(classOf[ParsedResultsRepositoryImpl])
 trait ParsedResultsRepository {
@@ -42,9 +42,10 @@ trait ParsedResultsTable {
   class ParsedResultsTable(tag: Tag) extends Table[SavedParseResult](tag, "ParsedResults") {
     val id: Rep[Int] = column[Int]("id", O.AutoInc, O.PrimaryKey)
     val grammar: Rep[String] = column[String]("grammar")
+    val lexer: Rep[String] = column[String]("lexer")
     val src: Rep[String] = column[String]("src")
 
-    def * = (grammar, src, id.?) <> (SavedParseResult.tupled, SavedParseResult.unapply)
+    def * = (grammar, lexer, src, id.?) <> (SavedParseResult.tupled, SavedParseResult.unapply)
   }
 
   lazy protected val resultsTableQuery = TableQuery[ParsedResultsTable]

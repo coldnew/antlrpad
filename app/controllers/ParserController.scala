@@ -84,8 +84,8 @@ class ParserController @Inject() (grammarParser: AntlrGrammarParser,
   def save() = Action.async { implicit request =>
     val saveRes = for {
       req   <-  getRequestData
-      id    =   repo.save(SavedParseResult(req.grammar, req.src, None))
-      grm   <-  grammarParser.parseGrammar(req.grammar, None)
+      id    =   repo.save(SavedParseResult(req.grammar, req.lexer.getOrElse(""), req.src, None))
+      grm   <-  grammarParser.parseGrammar(req.grammar, req.lexer)
       exp   =   parser.parse(req.src, req.rule, grm)
     } yield SaveRequestResult(id, exp)
 

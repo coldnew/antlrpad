@@ -15,7 +15,11 @@ class GrammarParserErrorListener(val errorManager: ErrorManager) extends ANTLRTo
   override def error(msg: ANTLRMessage): Unit = allMessages += convertError(msg, ParseMessage.Error)
   override def info(msg: String): Unit = allMessages += ParseMessage(msg, ParseMessage.Info, 0, 0)
 
+  // Check for error message text is just a hack to ignore silly ANTLR behaviour - ALWAYS check if tokens file exists even
+  // if vocab has been imported already. When parser includes lexer and parser (i.e. it is not a combined grammar) LG is parsed
+  // first and then imported into parser grammar. So there is no need in token file, obviously.
   def all: Seq[ParseMessage] = allMessages.filter(!_.message.contains("cannot find tokens file"))
+
   def errors: Seq[ParseMessage] = all.filter(_.errType == ParseMessage.Error)
   def warnings: Seq[ParseMessage] = all.filter(_.errType == ParseMessage.Warning)
 }

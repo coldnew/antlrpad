@@ -11,7 +11,7 @@ import scala.concurrent.Future
 
 class ParsedResultsRepositoryMock extends ParsedResultsRepository {
   override def insert(parsedResult: SavedParseResult): Future[Int] = Future { 0 }
-  override def load(id: Int): Future[Option[SavedParseResult]] = Future { Some(new SavedParseResult("", "", None)) }
+  override def load(id: Int): Future[Option[SavedParseResult]] = Future { Some(new SavedParseResult("", "", "", None)) }
   override def save(parsedResult: SavedParseResult): Future[Option[Int]] = Future { Some(0) }
 }
 
