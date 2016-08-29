@@ -19,19 +19,21 @@ class InMemoryCache[TKey, TValue] extends CacheStorage[TKey, TValue] {
   override def hasKey(key: TKey): Boolean = storage.get(key).isDefined
 }
 
-// cache by src.hashCode value { "value to be cached" }
+// cache(true)    by src.hashCode value { "value to be cached" }
+//       enabled?    key                expression to cache
 object Cached {
 
-  class CacheBuilderBy[TKey](val key: TKey) {
+  class CacheBuilderBy[TKey](val key: TKey, enabledIf: => Boolean) {
     def value[TValue](body: => TValue)(implicit cacheStorage: CacheStorage[TKey, TValue]): TValue = {
-      cacheStorage.get(key).getOrElse(cacheStorage.put(key, body))
+      if (enabledIf) cacheStorage.get(key).getOrElse(cacheStorage.put(key, body))
+      else body
     }
   }
 
-  class CacheBuilder {
-    def by[TKey](key: => TKey) = new CacheBuilderBy[TKey](key)
+  class CacheBuilder(enableIf: => Boolean) {
+    def by[TKey](key: => TKey) = new CacheBuilderBy[TKey](key, enableIf)
   }
 
-  def cache = new CacheBuilder()
+  def cache(enableIf: => Boolean) = new CacheBuilder(enableIf)
 }
 
