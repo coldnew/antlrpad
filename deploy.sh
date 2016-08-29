@@ -1,1 +1,1 @@
-ansible-playbook -i deploy/hosts -v deploy/deploy.yaml
+ansible-playbook -i deploy/hosts deploy/deploy.yaml
