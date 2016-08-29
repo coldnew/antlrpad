@@ -1,112 +1,23 @@
-$(function(){
+function App() {
+    this.parseUrl = 'api/parse/';
+    this.loadUrl = 'api/load/';
+    this.saveUrl = 'api/save/';
+};
 
-    var parseUrl = 'api/parse/';
-    var loadUrl = 'api/load/';
-    var saveUrl = 'api/save/';
-
-    function loadRules(rules, rule) {
-        var startRuleSel = $('#startRule');
-        startRuleSel.empty();
-        for(var o in rules) {
-            startRuleSel.append('<option>' + rules[o] + '</option>');
-        }
-
-        startRuleSel.val(rule);
-    }
-
-    function showGrammarErrors(errors) {
-        var errorNotifications = errors.map(function(e) {
-        return {
-            column: e.col,
-            row: e.line - 1,
-            type: e.errType,
-            text: e.message
-        }});
-
-        editor.getSession().setAnnotations(errorNotifications);
-    }
-
-    function showParseMessages(messages) {
-        if (messages.length == 0) {
-            $('#parseMessages').hide();
-        }
-        else
-        {
-            var msg = messages.map(function(m) { return "line " + m.line + ", col: " + m.col + " : " + m.message; }).join("<br>");
-            $('#parseMessages').text(msg).show();
-        }
-    }
-
-    function parseExpression(url, callback) {
-        var grammar = editor.getValue();
-        var src = $('#src').val();
-        var startRuleSel = $('#startRule');
-        $.post(url, { grammar: grammar, src: src, rule: startRuleSel.val() }, function(data){
-            if (data.tree && data.parsedGrammar.rules) {
-                loadRules(data.parsedGrammar.rules, data.rule);
-                draw(getTreeModel(data.tree));
-                $('#grammarError').hide();
-                showGrammarErrors(data.parsedGrammar.warnings);
-                showParseMessages(data.messages);
-            } else {
-                $('#grammarError').show();
-                showGrammarErrors(data.errors);
-                draw(null);
-            }
-
-            if (callback) {
-                callback(data.id);
-            }
-
-        }).fail(function(err){
-            $('#grammarError').show();
-        });
-    }
-
-    function loadTree(id) {
-        $.get(loadUrl + id, {}, function(res){
-            editor.setValue(res.grammar);
-            $('#src').val(res.src);
-
-            if (res.tree) {
-                draw(getTreeModel(JSON.parse(res.tree)));
-            }
-
-            loadRules(res.rules.split(','), res.rule);
-        });
-    }
+App.prototype.init = function() {
+    var self = this;
 
     var sessionId = location.hash.substring(1);
     if (sessionId) {
-        loadTree(sessionId);
-    }
-
-    function draw(tree) {
-        $('#tree').jstree();
-        $('#tree').jstree(true).settings.core.data = tree;
-        $('#tree').jstree(true).refresh();
-    }
-
-    function getTreeModel(tree) {
-        var children = [];
-        for(var c in tree.children) {
-            children.push(getTreeModel(tree.children[c]));
-        }
-
-        var node = { text: tree.rule + ': ' + tree.text, children: children, state: { opened: true }, icon: false };
-        if (tree.hasError) {
-            node.icon = "glyphicon glyphicon-remove red";
-        }
-
-        return node;
+        self.load(sessionId);
     }
 
     $('#parse').click(function() {
-        parseExpression(parseUrl);
+        self.parseExpression(self.parseUrl);
     });
 
     $('#save').click(function() {
-        parseExpression(saveUrl, function(id){
+        self.parseExpression(self.saveUrl, function(id){
             window.location = '/#' + id;
         });
     });
@@ -118,17 +29,118 @@ $(function(){
         }
 
         reqTimer = setTimeout(function(){
-            parseExpression(parseUrl);
+            self.parseExpression(self.parseUrl);
         }, 1000);
     });
 
-    function initEditor(elId) {
-        var editor = ace.edit(elId);
-        editor.setTheme("ace/theme/chrome");
-        editor.getSession().setMode("ace/mode/antlr4");
-    };
+    self.parserEditor = self.initEditor("grammar");
+    self.lexerEditor = self.initEditor("lexer");
+};
+
+App.prototype.loadRules = function(rules, rule) {
+    var startRuleSel = $('#startRule');
+    startRuleSel.empty();
+    for(var o in rules) {
+        startRuleSel.append('<option>' + rules[o] + '</option>');
+    }
+
+    startRuleSel.val(rule);
+};
+
+App.prototype.showGrammarErrors = function(errors) {
+    var errorNotifications = errors.map(function(e) {
+    return {
+        column: e.col,
+        row: e.line - 1,
+        type: e.errType,
+        text: e.message
+    }});
+
+    this.parserEditor.getSession().setAnnotations(errorNotifications);
+};
+
+App.prototype.showParseMessages = function(messages) {
+    if (messages.length == 0) {
+        $('#parseMessages').hide();
+    }
+    else
+    {
+        var msg = messages.map(function(m) { return "line " + m.line + ", col: " + m.col + " : " + m.message; }).join("<br>");
+        $('#parseMessages').text(msg).show();
+    }
+}
+
+App.prototype.parseExpression = function(url, callback) {
+    var self = this;
+    var grammar = self.parserEditor.getValue();
+    var lexer = self.lexerEditor.getValue();
+    var src = $('#src').val();
+    var startRuleSel = $('#startRule');
+    $.post(url, { grammar: grammar, lexer: lexer, src: src, rule: startRuleSel.val() }, function(data){
+        if (data.tree && data.parsedGrammar.rules) {
+            self.loadRules(data.parsedGrammar.rules, data.rule);
+            self.draw(self.getTreeModel(data.tree));
+            $('#grammarError').hide();
+            self.showGrammarErrors(data.parsedGrammar.warnings);
+            self.showParseMessages(data.messages);
+        } else {
+            $('#grammarError').show();
+            self.showGrammarErrors(data.errors);
+            self.draw(null);
+        }
+
+        if (callback) {
+            callback(data.id);
+        }
+
+    }).fail(function(err){
+        $('#grammarError').show();
+    });
+}
+
+App.prototype.load = function(id) {
+    var self = this;
+    $.get(loadUrl + id, {}, function(res){
+        self.parserEditor.setValue(res.grammar);
+        $('#src').val(res.src);
+        if (res.tree) {
+            self.draw(getTreeModel(JSON.parse(res.tree)));
+        }
+
+        self.loadRules(res.rules.split(','), res.rule);
+    });
+};
+
+App.prototype.draw = function(tree) {
+    $('#tree').jstree();
+    $('#tree').jstree(true).settings.core.data = tree;
+    $('#tree').jstree(true).refresh();
+};
+
+App.prototype.initEditor = function(elId) {
+    var editor = ace.edit(elId);
+    editor.setTheme("ace/theme/chrome");
+    editor.getSession().setMode("ace/mode/antlr4");
+
+    return editor;
+};
+
+App.prototype.getTreeModel = function(tree) {
+    var children = [];
+    for(var c in tree.children) {
+        children.push(this.getTreeModel(tree.children[c]));
+    }
+
+    var node = { text: tree.rule + ': ' + tree.text, children: children, state: { opened: true }, icon: false };
+    if (tree.hasError) {
+        node.icon = "glyphicon glyphicon-remove red";
+    }
+
+    return node;
+};
 
 
-    initEditor("grammar");
-    initEditor("lexer")
+$(function(){
+    var app = new App();
+    app.init();
 })

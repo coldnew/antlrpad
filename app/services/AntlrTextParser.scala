@@ -6,6 +6,7 @@ import org.antlr.v4.tool.{Grammar, GrammarParserInterpreter, LexerGrammar}
 
 import scala.collection.JavaConverters._
 import models.{Failure, Success}
+import org.antlr.v4.runtime.atn.{ATNDeserializer, ATNSerializer}
 
 import scalaz.\/
 import scalaz.Scalaz._
@@ -28,7 +29,8 @@ class AntlrTextParser {
     val ruleNames = grammar.getRuleNames()
 
     val errorListener = new TextParserErrorListener()
-    val parser = new GrammarParserInterpreter(grammar, grammar.atn, tokens)
+    val atn = new ATNDeserializer().deserialize(ATNSerializer.getSerializedAsChars(grammar.getATN()))
+    val parser = new GrammarParserInterpreter(grammar, atn, tokens)
     parser.removeErrorListeners()
     parser.addErrorListener(errorListener)
 

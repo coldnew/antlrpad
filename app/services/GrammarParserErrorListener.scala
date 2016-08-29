@@ -15,6 +15,7 @@ class GrammarParserErrorListener(val errorManager: ErrorManager) extends ANTLRTo
   override def error(msg: ANTLRMessage): Unit = allMessages += convertError(msg, ParseMessage.Error)
   override def info(msg: String): Unit = allMessages += ParseMessage(msg, ParseMessage.Info, 0, 0)
 
-  def errors: Seq[ParseMessage] = allMessages.filter(_.errType == ParseMessage.Error)
-  def warnings: Seq[ParseMessage] = allMessages.filter(_.errType == ParseMessage.Warning)
+  def all: Seq[ParseMessage] = allMessages.filter(!_.message.contains("cannot find tokens file"))
+  def errors: Seq[ParseMessage] = all.filter(_.errType == ParseMessage.Error)
+  def warnings: Seq[ParseMessage] = all.filter(_.errType == ParseMessage.Warning)
 }

@@ -34,13 +34,14 @@ class ParserController @Inject() (grammarParser: AntlrGrammarParser,
   implicit lazy val successWriter = Json.writes[ParseTextSuccess]
   implicit lazy val parseGrammarFailureWriter = Json.writes[ParseGrammarFailure]
 
-  case class RequestData(src: String, grammar: String, rule: String) extends Success
+  case class RequestData(src: String, grammar: String, lexer: Option[String], rule: String) extends Success
   case class RequestFailure(error: String) extends Failure
   case class SaveRequestResult(saveRequest: Future[Option[Int]], result: Failure \/ Success)
 
   val form = Form(mapping(
     "src" -> nonEmptyText,
     "grammar" -> nonEmptyText,
+    "lexer" -> optional(text),
     "rule" -> text
   )(RequestData.apply)(RequestData.unapply))
 
@@ -73,7 +74,7 @@ class ParserController @Inject() (grammarParser: AntlrGrammarParser,
   def parseSrc() = Action { implicit request=>
     val res = for {
       req   <-  getRequestData
-      grm   <-  grammarParser.parseGrammar(req.grammar)
+      grm   <-  grammarParser.parseGrammar(req.grammar, req.lexer)
       exp   <-  parser.parse(req.src, req.rule, grm)
     } yield exp
 
@@ -84,7 +85,7 @@ class ParserController @Inject() (grammarParser: AntlrGrammarParser,
     val saveRes = for {
       req   <-  getRequestData
       id    =   repo.save(SavedParseResult(req.grammar, req.src, None))
-      grm   <-  grammarParser.parseGrammar(req.grammar)
+      grm   <-  grammarParser.parseGrammar(req.grammar, None)
       exp   =   parser.parse(req.src, req.rule, grm)
     } yield SaveRequestResult(id, exp)
 
