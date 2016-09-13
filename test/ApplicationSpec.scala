@@ -51,10 +51,10 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
         ("rule", ""))
 
       status(response) mustBe OK
-      contentAsJson(response) \ "errors" must be (JsDefined(Json.parse("""[{"message":"error(50): :2:9: syntax error: mismatched input '<EOF>' expecting SEMI while matching a rule","errType":"error","col":9,"line":2}]""")))
+      contentAsJson(response) \ "grammar" \ "errors" mustBe JsDefined(Json.parse("""[{"message":"error(50): :2:9: syntax error: mismatched input '<EOF>' expecting SEMI while matching a rule","errType":"error","col":9,"line":2}]"""))
     }
 
-    "return grammar warnings" in {
+    "return combined grammar warnings" in {
       val response = parseRequest(
         ("grammar", "grammar test; \n id: ID; ID: 'a'*;"),
         ("src", "2"),
@@ -62,11 +62,18 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
       )
 
       status(response) mustBe OK
-      contentAsJson(response) \ "parsedGrammar" \ "warnings" must be (JsDefined(Json.parse("""[{"message":"warning(146): :2:9: non-fragment lexer rule ID can match the empty string","errType":"warning","col":9,"line":2}]""")))
+      contentAsJson(response) \ "grammar" \ "warnings" mustBe JsDefined(Json.parse("""[{"message":"warning(146): :2:9: non-fragment lexer rule ID can match the empty string","errType":"warning","col":9,"line":2}]"""))
     }
 
     "use lexer grammar when provided" in {
+      val response = parseRequest(
+        ("grammar", "grammar test; \n id: ID; "),
+        ("lexer", "lexer grammar test; \n ID: 'a'*;"),
+        ("src", "a"),
+        ("rule", ""))
 
+      status(response) mustBe OK
+      contentAsJson(response) \ "tree" mustBe JsDefined(Json.parse("""{"rule":"a","text":"id","children":[],"hasError":false}"""))
     }
 
     "return lexer grammar errors" in {

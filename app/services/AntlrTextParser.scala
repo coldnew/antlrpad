@@ -11,7 +11,7 @@ import org.antlr.v4.runtime.atn.{ATNDeserializer, ATNSerializer}
 import scalaz.\/
 import scalaz.Scalaz._
 
-case class ParseTextSuccess(tree: ParseTree, rule: String, messages: Seq[ParseMessage], parsedGrammar: ParseGrammarSuccess) extends Success
+case class ParseTextSuccess(tree: ParseTree, rule: String, messages: Seq[ParseMessage], grammar: ParseGrammarSuccess) extends Success
 case class ParseTextFailure() extends Failure
 
 class AntlrTextParser {

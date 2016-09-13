@@ -32,7 +32,11 @@ class ParserController @Inject() (grammarParser: AntlrGrammarParser,
   implicit lazy val savedParseResultWriter = Json.writes[SavedParseResult]
   implicit lazy val parseTreeWriter = Json.writes[ParseTree]
   implicit lazy val successWriter = Json.writes[ParseTextSuccess]
-  implicit lazy val parseGrammarFailureWriter = Json.writes[ParseGrammarFailure]
+  implicit lazy val parseGrammarFailureWriter = new Writes[ParseGrammarFailure] {
+    override def writes(o: ParseGrammarFailure): JsValue = {
+      Json.obj("grammar" -> Json.obj("errors" -> o.errors))
+    }
+  }
 
   case class RequestData(src: String, grammar: String, lexer: Option[String], rule: String) extends Success
   case class RequestFailure(error: String) extends Failure
