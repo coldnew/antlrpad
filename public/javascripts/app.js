@@ -101,8 +101,8 @@ App.prototype.parseExpression = function(url, callback) {
 App.prototype.load = function(id) {
     var self = this;
     $.get(self.loadUrl + id, {}, function(res){
-        self.parserEditor.setValue(res.grammar);
-        self.lexerEditor.setValue(res.lexer);
+        self.parserEditor.setValue(res.grammar, -1);
+        self.lexerEditor.setValue(res.lexer, -1);
         $('#src').val(res.src);
 //        self.loadRules(res.rules.split(','), res.rule);
     });
