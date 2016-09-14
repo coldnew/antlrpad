@@ -11,6 +11,10 @@ import scala.concurrent.Future
 
 class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
 
+  val MISMATCHED_EOF = """[{"message":"error(50): :2:9: syntax error: mismatched input '<EOF>' expecting SEMI while matching a rule","errType":"error","col":9,"line":2}]"""
+  val RULE_CAN_MATCH_EMPTY_STRING = """[{"message":"warning(146): :2:9: non-fragment lexer rule ID can match the empty string","errType":"warning","col":9,"line":2}]"""
+  val A_LETTER_PARSE_TREE = """{"rule":"a","text":"id","children":[],"hasError":false}"""
+
   implicit lazy val materializer: Materializer = app.materializer
 
   override def newAppForTest(testData: TestData): Application = antlrFakeApp(testData)
@@ -51,7 +55,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
         ("rule", ""))
 
       status(response) mustBe OK
-      contentAsJson(response) \ "grammar" \ "errors" mustBe JsDefined(Json.parse("""[{"message":"error(50): :2:9: syntax error: mismatched input '<EOF>' expecting SEMI while matching a rule","errType":"error","col":9,"line":2}]"""))
+      contentAsJson(response) \ "grammar" \ "errors" mustBe JsDefined(Json.parse(MISMATCHED_EOF))
     }
 
     "return combined grammar warnings" in {
@@ -62,7 +66,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
       )
 
       status(response) mustBe OK
-      contentAsJson(response) \ "grammar" \ "warnings" mustBe JsDefined(Json.parse("""[{"message":"warning(146): :2:9: non-fragment lexer rule ID can match the empty string","errType":"warning","col":9,"line":2}]"""))
+      contentAsJson(response) \ "grammar" \ "warnings" mustBe JsDefined(Json.parse(RULE_CAN_MATCH_EMPTY_STRING))
     }
 
     "use lexer grammar when provided" in {
@@ -73,7 +77,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
         ("rule", ""))
 
       status(response) mustBe OK
-      contentAsJson(response) \ "tree" mustBe JsDefined(Json.parse("""{"rule":"a","text":"id","children":[],"hasError":false}"""))
+      contentAsJson(response) \ "tree" mustBe JsDefined(Json.parse(A_LETTER_PARSE_TREE))
     }
 
     "return lexer grammar errors" in {
