@@ -7,49 +7,58 @@ import org.antlr.v4.tool._
 import utils.Cached._
 import utils.InMemoryCache
 
-import scala.util.Try
 import scalaz.\/
 import scalaz.Scalaz._
 
 case class ParseGrammarSuccess(grammar: Grammar, lexerGrammar: LexerGrammar, rules: Seq[String], warnings: Seq[ParseMessage]) extends Success
 case class ParseGrammarFailure(errors: Seq[ParseMessage]) extends Failure
 
-class AntlrGrammarParser @Inject() (env: play.Environment) {
+abstract class AntlrBaseGrammarParser (useCache: Boolean) {
 
-  implicit lazy val inMemoryCache = new InMemoryCache[Int, ParseGrammarFailure \/ ParseGrammarSuccess]()
+  implicit lazy val inMemoryCache = new InMemoryCache[Int, Option[Grammar]]()
 
-  def parseGrammar(src: String, lexer: Option[String]): ParseGrammarFailure \/ ParseGrammarSuccess = {
-    cache(env.isProd) by src.hashCode value {
-      val tool = new org.antlr.v4.Tool()
+  protected val tool = new org.antlr.v4.Tool()
+  val listener: GrammarParserErrorListener
 
-      val errorListener = new GrammarParserErrorListener(tool.errMgr)
-      tool.removeListeners()
-      tool.addListener(errorListener)
+  def parseGrammar(src: String): Option[Grammar] = {
+    if (src == null || src.isEmpty) {
+      listener.error("Empty grammar is not allowed")
+      None
+    }
+    else {
+      cache(useCache) by src.hashCode value {
 
-      val grammar = parseGrammar(src, tool)
-      val lexerGrammar = lexer
-        .map(_.trim)
-        .filter(!_.isEmpty)
-        .flatMap(lexerSrc => Try {
-          val lg = parseGrammar(lexerSrc, tool).asInstanceOf[LexerGrammar]
-          tool.process(lg, false)
-          grammar.importVocab(lg)
+        tool.removeListeners()
+        tool.addListener(listener)
 
-          lg
-        }.toOption)
+        val grammarRootAst = tool.parseGrammarFromString(src)
+        val grammar = tool.createGrammar(grammarRootAst)
 
-      tool.process(grammar, false)
+        tool.process(grammar, false)
 
-      if (errorListener.errors.nonEmpty)
-        ParseGrammarFailure(errorListener.all).left
-      else
-        ParseGrammarSuccess(grammar, lexerGrammar.getOrElse(grammar.getImplicitLexer), grammar.getRuleNames, errorListener.warnings).right
+        Option(grammar)
+      }
+    }
+  }
+}
+
+class AntlrLexerGrammarParser(useCache: Boolean) extends AntlrBaseGrammarParser(useCache) {
+
+  override val listener: GrammarParserErrorListener = new GrammarParserErrorListener(tool.errMgr, ParseMessage.SourceLexer)
+
+  def parse(grammarSource: String): ParseGrammarFailure \/ ParseGrammarSuccess = {
+    val grammar = parseGrammar(grammarSource).map(_.asInstanceOf[LexerGrammar])
+
+    if (listener.errors.isEmpty && grammar.isDefined) {
+      val g = grammar.get
+      ParseGrammarSuccess(g, g.implicitLexer, g.getRuleNames, listener.warnings).right
+    }
+    else {
+      ParseGrammarFailure(listener.errors).left
     }
   }
 
-  private def parseGrammar(src: String, tool: Tool): Grammar = {
-    val grammarRootAst = tool.parseGrammarFromString(src)
-    val grammar = tool.createGrammar(grammarRootAst)
-    grammar
-  }
+}
+
+class AntlrGrammarParser(useCache: Boolean)  {
 }

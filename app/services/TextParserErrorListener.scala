@@ -9,7 +9,7 @@ class TextParserErrorListener extends BaseErrorListener {
   val allMessages = mutable.MutableList[ParseMessage]()
 
   override def syntaxError(recognizer: Recognizer[_, _], offendingSymbol: scala.Any, line: Int, charPositionInLine: Int, msg: String, e: RecognitionException): Unit = {
-    allMessages += ParseMessage(msg, ParseMessage.Error, charPositionInLine, line)
+    allMessages += ParseMessage(ParseMessage.SourceTextParser, msg, ParseMessage.Error, charPositionInLine, line)
     super.syntaxError(recognizer, offendingSymbol, line, charPositionInLine, msg, e)
   }
 
