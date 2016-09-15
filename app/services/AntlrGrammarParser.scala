@@ -19,16 +19,17 @@ abstract class AntlrBaseGrammarParser (useCache: Boolean) {
   implicit lazy val inMemoryCache = new InMemoryCache[Int, Option[Grammar]]()
 
   protected val tool = new org.antlr.v4.Tool()
-  val listener: GrammarParserErrorListener
 
+  val listener: GrammarParserErrorListener
   def preProcessGrammar(grammar: Grammar): Grammar
+  def getResult(g: Grammar): ParseGrammarSuccess
 
   def parse(grammarSource: String): ParseGrammarFailure \/ ParseGrammarSuccess = {
     val grammar = parseGrammar(grammarSource)
 
     if (listener.errors.isEmpty && grammar.isDefined) {
       val g = grammar.get
-      ParseGrammarSuccess(g, g.implicitLexer, g.getRuleNames, listener.warnings).right
+      getResult(g).right
     }
     else {
       ParseGrammarFailure(listener.errors).left
@@ -61,6 +62,7 @@ class AntlrLexerGrammarParser(useCache: Boolean) extends AntlrBaseGrammarParser(
 
   override val listener: GrammarParserErrorListener = new GrammarParserErrorListener(tool.errMgr, ParseMessage.SourceLexer)
   override def preProcessGrammar(grammar: Grammar): Grammar = grammar
+  override def getResult(g: Grammar): ParseGrammarSuccess = ParseGrammarSuccess(null, g.asInstanceOf[LexerGrammar], g.getRuleNames, listener.warnings)
 
 }
 
@@ -72,4 +74,5 @@ class AntlrGrammarParser(useCache: Boolean, lexer: Option[LexerGrammar]) extends
       grammar
     }).getOrElse(grammar)
   }
+  override def getResult(g: Grammar): ParseGrammarSuccess = ParseGrammarSuccess(g, lexer.getOrElse(g.getImplicitLexer), g.getRuleNames, listener.warnings)
 }

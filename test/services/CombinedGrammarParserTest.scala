@@ -15,6 +15,8 @@ class CombinedGrammarParserTest extends PlaySpec {
       g mustBe a [\/-[_]]
       g.map(g => {
         g.rules.length mustBe 1
+        g.grammar must not be (null)
+        g.lexerGrammar must not be (null)
       })
 
       combinedParser.listener.errors mustBe empty

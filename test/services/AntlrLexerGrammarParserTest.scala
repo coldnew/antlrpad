@@ -15,6 +15,8 @@ class AntlrLexerGrammarParserTest extends PlaySpec {
       lg mustBe a [\/-[_]]
       lg.map(g => {
         g.rules.length mustBe 1
+        g.grammar mustBe (null)
+        g.lexerGrammar must not be (null)
       })
 
       lexerGrammarParser.listener.errors mustBe empty
