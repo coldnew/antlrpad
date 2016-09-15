@@ -16,7 +16,7 @@ class AntlrLexerGrammarParserTest extends PlaySpec {
       lg.map(g => {
         g.rules.length mustBe 1
       })
-      
+
       lexerGrammarParser.listener.errors mustBe empty
     }
 

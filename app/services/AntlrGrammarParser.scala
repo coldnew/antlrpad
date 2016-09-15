@@ -7,6 +7,7 @@ import org.antlr.v4.tool._
 import utils.Cached._
 import utils.InMemoryCache
 
+import scala.util.Try
 import scalaz.\/
 import scalaz.Scalaz._
 
@@ -20,34 +21,10 @@ abstract class AntlrBaseGrammarParser (useCache: Boolean) {
   protected val tool = new org.antlr.v4.Tool()
   val listener: GrammarParserErrorListener
 
-  def parseGrammar(src: String): Option[Grammar] = {
-    if (src == null || src.isEmpty) {
-      listener.error("Empty grammar is not allowed")
-      None
-    }
-    else {
-      cache(useCache) by src.hashCode value {
-
-        tool.removeListeners()
-        tool.addListener(listener)
-
-        val grammarRootAst = tool.parseGrammarFromString(src)
-        val grammar = tool.createGrammar(grammarRootAst)
-
-        tool.process(grammar, false)
-
-        Option(grammar)
-      }
-    }
-  }
-}
-
-class AntlrLexerGrammarParser(useCache: Boolean) extends AntlrBaseGrammarParser(useCache) {
-
-  override val listener: GrammarParserErrorListener = new GrammarParserErrorListener(tool.errMgr, ParseMessage.SourceLexer)
+  def preProcessGrammar(grammar: Grammar): Grammar
 
   def parse(grammarSource: String): ParseGrammarFailure \/ ParseGrammarSuccess = {
-    val grammar = parseGrammar(grammarSource).map(_.asInstanceOf[LexerGrammar])
+    val grammar = parseGrammar(grammarSource)
 
     if (listener.errors.isEmpty && grammar.isDefined) {
       val g = grammar.get
@@ -58,7 +35,41 @@ class AntlrLexerGrammarParser(useCache: Boolean) extends AntlrBaseGrammarParser(
     }
   }
 
+  private def parseGrammar(src: String): Option[Grammar] = {
+    if (src == null || src.isEmpty) {
+      listener.error("Empty grammar is not allowed")
+      None
+    }
+    else {
+      cache(useCache) by src.hashCode value {
+        tool.removeListeners()
+        tool.addListener(listener)
+
+        val grammarRootAst = tool.parseGrammarFromString(src)
+        val grammar = preProcessGrammar(tool.createGrammar(grammarRootAst))
+
+        Try {
+          tool.process(grammar, false)
+          grammar
+        }.toOption
+      }
+    }
+  }
 }
 
-class AntlrGrammarParser(useCache: Boolean)  {
+class AntlrLexerGrammarParser(useCache: Boolean) extends AntlrBaseGrammarParser(useCache) {
+
+  override val listener: GrammarParserErrorListener = new GrammarParserErrorListener(tool.errMgr, ParseMessage.SourceLexer)
+  override def preProcessGrammar(grammar: Grammar): Grammar = grammar
+
+}
+
+class AntlrGrammarParser(useCache: Boolean, lexer: Option[LexerGrammar]) extends AntlrBaseGrammarParser(useCache) {
+  override val listener: GrammarParserErrorListener = new GrammarParserErrorListener(tool.errMgr, ParseMessage.SourceParser)
+  override def preProcessGrammar(grammar: Grammar): Grammar = {
+    lexer.map(l => {
+      grammar.importVocab(l)
+      grammar
+    }).getOrElse(grammar)
+  }
 }
