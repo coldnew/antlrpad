@@ -16,7 +16,6 @@ import scalaz.{-\/, \/, \/-}
 
 @Singleton
 class ParserController @Inject() (grammarParser: AntlrGrammarParser,
-                                  parser: AntlrTextParser,
                                   private val repo: ParsedResultsRepository,
                                   val messagesApi: MessagesApi) extends Controller with I18nSupport {
 
@@ -79,7 +78,7 @@ class ParserController @Inject() (grammarParser: AntlrGrammarParser,
     val res = for {
       req   <-  getRequestData
       grm   <-  grammarParser.parseGrammar(req.grammar, req.lexer)
-      exp   <-  parser.parse(req.src, req.rule, grm)
+      exp   <-  new AntlrTextParser(grm).parse(req.src, req.rule)
     } yield exp
 
     getResult(res)
@@ -90,7 +89,7 @@ class ParserController @Inject() (grammarParser: AntlrGrammarParser,
       req   <-  getRequestData
       id    =   repo.save(SavedParseResult(req.grammar, req.lexer.getOrElse(""), req.src, None))
       grm   <-  grammarParser.parseGrammar(req.grammar, req.lexer)
-      exp   =   parser.parse(req.src, req.rule, grm)
+      exp   =   new AntlrTextParser(grm).parse(req.src, req.rule)
     } yield SaveRequestResult(id, exp)
 
     saveRes.fold(
