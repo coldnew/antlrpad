@@ -14,10 +14,16 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
   val MISMATCHED_EOF = """[{"message":"error(50): :2:9: syntax error: mismatched input '<EOF>' expecting SEMI while matching a rule","errType":"error","col":9,"line":2}]"""
   val RULE_CAN_MATCH_EMPTY_STRING = """[{"message":"warning(146): :2:9: non-fragment lexer rule ID can match the empty string","errType":"warning","col":9,"line":2}]"""
   val A_LETTER_PARSE_TREE = """{"rule":"a","text":"id","children":[],"hasError":false}"""
+  val LEXER_ERROR = """[{"message":"error(50): :2:9: syntax error: '<EOF>' came as a complete surprise to me while matching a lexer rule","errType":"error","col":9,"line":2},{"message":"warning(125): :2:5: implicit definition of token ID in parser","errType":"warning","col":5,"line":2}]"""
+  val LEXER_WARNING = """[{"message":"warning(146): :2:1: non-fragment lexer rule ID can match the empty string","errType":"warning","col":1,"line":2}]"""
 
   implicit lazy val materializer: Materializer = app.materializer
 
   override def newAppForTest(testData: TestData): Application = antlrFakeApp(testData)
+
+  def sendParseRequest(data: (String, String)*): Future[Result] = {
+    route(app, FakeRequest(POST, "/api/parse/").withFormUrlEncodedBody(data: _*)).get
+  }
 
   "Routes" should {
 
@@ -39,17 +45,13 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
 
   "ParseController" should {
 
-    def parseRequest(data: (String, String)*): Future[Result] = {
-      route(app, FakeRequest(POST, "/api/parse/").withFormUrlEncodedBody(data: _*)).get
-    }
-
     "give bad request when no grammar " in {
       val home = route(app, FakeRequest(POST, "/api/parse/")).get
       status(home) mustBe BAD_REQUEST
     }
 
     "return combined grammar errors" in {
-      val response = parseRequest(
+      val response = sendParseRequest(
         ("grammar", "grammar test; \n two: '2'"),
         ("src", "2"),
         ("rule", ""))
@@ -59,7 +61,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
     }
 
     "return combined grammar warnings" in {
-      val response = parseRequest(
+      val response = sendParseRequest(
         ("grammar", "grammar test; \n id: ID; ID: 'a'*;"),
         ("src", "2"),
         ("rule", "")
@@ -70,7 +72,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
     }
 
     "use lexer grammar when provided" in {
-      val response = parseRequest(
+      val response = sendParseRequest(
         ("grammar", "grammar test; \n id: ID; "),
         ("lexer", "lexer grammar test; \n ID: 'a'*;"),
         ("src", "a"),
@@ -81,19 +83,29 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
     }
 
     "return lexer grammar errors" in {
+      val response = sendParseRequest(
+        ("grammar", "grammar test; \n id: ID; "),
+        ("lexer", "lexer grammar test; \n ID: 'a'*"),
+        ("src", "a"),
+        ("rule", ""))
 
+      status(response) mustBe OK
+      contentAsJson(response) \ "grammar" \ "errors" mustBe JsDefined(Json.parse(LEXER_ERROR))
     }
 
     "return lexer grammar warnings" in {
+      val response = sendParseRequest(
+        ("grammar", "grammar test; \n id: ID; "),
+        ("lexer", "lexer grammar test; \n ID: 'a'*;"),
+        ("src", "a"),
+        ("rule", ""))
 
-    }
-
-    "return error when lexer provided for combined grammar" in {
-
+      status(response) mustBe OK
+      contentAsJson(response) \ "grammar" \ "warnings" mustBe JsDefined(Json.parse(LEXER_WARNING))
     }
 
     "use implicit lexer for combined grammar" in {
-      val response = parseRequest(
+      val response = sendParseRequest(
         ("grammar", "grammar test; \n two: '2';"),
         ("src", "2"),
         ("rule", "")
