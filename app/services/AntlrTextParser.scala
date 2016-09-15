@@ -37,7 +37,7 @@ class AntlrTextParser(parsedGrammar: ParseGrammarSuccess) {
 
     val tree = parser.parse(startRuleIndex)
 
-    (tree, ruleNames, ruleNames(startRuleIndex), errorListener.errors)
+    (tree, ruleNames, ruleNames(startRuleIndex), errorListener.allMessages)
   }
 
   private def getTreeModel(node: ParserRuleContext, ruleNames: Array[String]): ParseTree = {
