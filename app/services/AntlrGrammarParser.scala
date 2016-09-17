@@ -1,45 +1,32 @@
 package services
 
-import com.google.inject.Inject
 import models.{Failure, Success}
-import org.antlr.v4.Tool
 import org.antlr.v4.tool._
 import utils.Cached._
 import utils.InMemoryCache
 
-import scala.util.Try
-import scalaz.\/
 import scalaz.Scalaz._
+import scalaz.\/
 
-case class ParseGrammarSuccess(grammar: Grammar, lexerGrammar: LexerGrammar, rules: Seq[String], warnings: Seq[ParseMessage]) extends Success
+sealed trait ParseGrammarSuccess extends Success
+case class EmptyGrammar() extends ParseGrammarSuccess
+case class ParsedGrammar(grammar: Grammar, lexerGrammar: LexerGrammar, rules: Seq[String], warnings: Seq[ParseMessage]) extends ParseGrammarSuccess
+
 case class ParseGrammarFailure(errors: Seq[ParseMessage]) extends Failure
 
 abstract class AntlrBaseGrammarParser (useCache: Boolean) {
 
-  implicit lazy val inMemoryCache = new InMemoryCache[Int, Option[Grammar]]()
+  implicit lazy val inMemoryCache = new InMemoryCache[Int, ParseGrammarFailure \/ ParseGrammarSuccess]()
 
   protected val tool = new org.antlr.v4.Tool()
 
   val listener: GrammarParserErrorListener
   def preProcessGrammar(grammar: Grammar): Grammar
-  def getResult(g: Grammar): ParseGrammarSuccess
+  def getResult(g: Grammar): ParsedGrammar
 
-  def parse(grammarSource: String): ParseGrammarFailure \/ ParseGrammarSuccess = {
-    val grammar = parseGrammar(grammarSource)
-
-    if (listener.errors.isEmpty && grammar.isDefined) {
-      val g = grammar.get
-      getResult(g).right
-    }
-    else {
-      ParseGrammarFailure(listener.errors).left
-    }
-  }
-
-  private def parseGrammar(src: String): Option[Grammar] = {
+  def parse(src: String): ParseGrammarFailure \/ ParseGrammarSuccess = {
     if (src == null || src.isEmpty) {
-      listener.error("Empty grammar is not allowed")
-      None
+      EmptyGrammar().right
     }
     else {
       cache(useCache) by src.hashCode value {
@@ -49,30 +36,38 @@ abstract class AntlrBaseGrammarParser (useCache: Boolean) {
         val grammarRootAst = tool.parseGrammarFromString(src)
         val grammar = preProcessGrammar(tool.createGrammar(grammarRootAst))
 
-        Try {
-          tool.process(grammar, false)
-          grammar
-        }.toOption
+        tool.process(grammar, false)
+
+        if (listener.errors.isEmpty)
+          getResult(grammar).right
+        else
+          ParseGrammarFailure(listener.errors).left
       }
     }
   }
 }
 
 class AntlrLexerGrammarParser(useCache: Boolean) extends AntlrBaseGrammarParser(useCache) {
-
   override val listener: GrammarParserErrorListener = new GrammarParserErrorListener(tool.errMgr, ParseMessage.SourceLexer)
   override def preProcessGrammar(grammar: Grammar): Grammar = grammar
-  override def getResult(g: Grammar): ParseGrammarSuccess = ParseGrammarSuccess(null, g.asInstanceOf[LexerGrammar], g.getRuleNames, listener.warnings)
-
+  override def getResult(g: Grammar): ParsedGrammar = ParsedGrammar(null, g.asInstanceOf[LexerGrammar], g.getRuleNames, listener.warnings)
 }
 
-class AntlrGrammarParser(useCache: Boolean, lexer: Option[LexerGrammar]) extends AntlrBaseGrammarParser(useCache) {
+class AntlrGrammarParser(useCache: Boolean, lexer: ParseGrammarSuccess) extends AntlrBaseGrammarParser(useCache) {
   override val listener: GrammarParserErrorListener = new GrammarParserErrorListener(tool.errMgr, ParseMessage.SourceParser)
   override def preProcessGrammar(grammar: Grammar): Grammar = {
-    lexer.map(l => {
-      grammar.importVocab(l)
-      grammar
-    }).getOrElse(grammar)
+    lexer match {
+      case eg: EmptyGrammar => grammar
+      case lg: ParsedGrammar => {
+        grammar.importVocab(lg.lexerGrammar)
+        grammar
+      }
+    }
   }
-  override def getResult(g: Grammar): ParseGrammarSuccess = ParseGrammarSuccess(g, lexer.getOrElse(g.getImplicitLexer), g.getRuleNames, listener.warnings)
+  override def getResult(g: Grammar): ParsedGrammar = {
+    lexer match {
+      case _: EmptyGrammar => ParsedGrammar(g, g.getImplicitLexer, g.getRuleNames, listener.warnings)
+      case lg: ParsedGrammar => ParsedGrammar(g, lg.lexerGrammar, g.getRuleNames, listener.warnings ++ lg.warnings)
+    }
+  }
 }

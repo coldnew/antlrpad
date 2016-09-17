@@ -77,11 +77,11 @@ App.prototype.parseExpression = function(url, callback) {
     var src = $('#src').val();
     var startRuleSel = $('#startRule');
     $.post(url, { grammar: grammar, lexer: lexer, src: src, rule: startRuleSel.val() }, function(data){
-        if (data.tree && data.parsedGrammar.rules) {
-            self.loadRules(data.parsedGrammar.rules, data.rule);
+        if (data.tree && data.grammar.rules) {
+            self.loadRules(data.grammar.rules, data.rule);
             self.draw(self.getTreeModel(data.tree));
             $('#grammarError').hide();
-            self.showGrammarErrors(data.parsedGrammar.warnings);
+            self.showGrammarErrors(data.grammar.warnings);
             self.showParseMessages(data.messages);
         } else {
             $('#grammarError').show();

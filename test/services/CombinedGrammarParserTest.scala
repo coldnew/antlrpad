@@ -5,7 +5,7 @@ import org.scalatestplus.play.PlaySpec
 import scalaz.{-\/, \/-}
 
 class CombinedGrammarParserTest extends PlaySpec {
-  val combinedParser = new AntlrGrammarParser(false, None)
+  val combinedParser = new AntlrGrammarParser(false, EmptyGrammar())
 
   "Combined grammar parser" should {
 
@@ -13,7 +13,9 @@ class CombinedGrammarParserTest extends PlaySpec {
       val g = combinedParser.parse("grammar c1; a: A; A: 'a';")
 
       g mustBe a [\/-[_]]
-      g.map(g => {
+      g.map(res => {
+        val g = res.asInstanceOf[ParsedGrammar]
+
         g.rules.length mustBe 1
         g.grammar must not be (null)
         g.lexerGrammar must not be (null)
@@ -32,8 +34,10 @@ class CombinedGrammarParserTest extends PlaySpec {
     "return failure for empty string" in {
       val g = combinedParser.parse("")
 
-      g mustBe a [-\/[_]]
-      combinedParser.listener.errors must contain (ParseMessage("parser", "Empty grammar is not allowed", "error", 0, 0))
+      g mustBe a [\/-[_]]
+      g.map(x => {
+        x mustBe a [EmptyGrammar]
+      })
     }
 
   }

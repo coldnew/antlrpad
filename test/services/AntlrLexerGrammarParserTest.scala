@@ -13,7 +13,8 @@ class AntlrLexerGrammarParserTest extends PlaySpec {
       val lg = lexerGrammarParser.parse("lexer grammar l1; A: 'a';")
 
       lg mustBe a [\/-[_]]
-      lg.map(g => {
+      lg.map(res => {
+        val g = res.asInstanceOf[ParsedGrammar]
         g.rules.length mustBe 1
         g.grammar mustBe (null)
         g.lexerGrammar must not be (null)
@@ -32,8 +33,10 @@ class AntlrLexerGrammarParserTest extends PlaySpec {
     "return failure for empty string" in {
       val lg = lexerGrammarParser.parse("")
 
-      lg mustBe a [-\/[_]]
-      lexerGrammarParser.listener.errors must contain (ParseMessage("lexer", "Empty grammar is not allowed", "error", 0, 0))
+      lg mustBe a [\/-[_]]
+      lg.map(x => {
+        x mustBe a [EmptyGrammar]
+      })
     }
 
   }

@@ -8,7 +8,7 @@ class AntlrTextParserTest extends fixture.FlatSpec with MustMatchers {
   case class FixtureParam(grammar: ParseGrammarSuccess)
 
   def withFixture(test: OneArgTest) = {
-    val parser = new AntlrGrammarParser(false, None)
+    val parser = new AntlrGrammarParser(false, EmptyGrammar())
     parser.parse("grammar test; a: A+; A: 'a';").map(g =>
       withFixture(test.toNoArgTest(FixtureParam(g)))
     ).getOrElse(Failed("Grammar cannot be parsed"))

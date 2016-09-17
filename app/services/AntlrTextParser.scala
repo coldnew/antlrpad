@@ -1,25 +1,27 @@
 package services
 
-import models.ParseTree
+import models.{Failure, ParseTree, Success}
 import org.antlr.v4.runtime._
 import org.antlr.v4.tool.{Grammar, GrammarParserInterpreter, LexerGrammar}
 
 import scala.collection.JavaConverters._
-import models.{Failure, Success}
-import org.antlr.v4.runtime.atn.{ATNDeserializer, ATNSerializer}
-
-import scalaz.\/
 import scalaz.Scalaz._
+import scalaz.\/
 
-case class ParseTextSuccess(tree: ParseTree, rule: String, messages: Seq[ParseMessage], grammar: ParseGrammarSuccess) extends Success
-case class ParseTextFailure() extends Failure
+case class ParseTextSuccess(tree: ParseTree, rule: String, messages: Seq[ParseMessage], grammar: ParsedGrammar) extends Success
+case class ParseTextFailure(error: String) extends Failure
 
-class AntlrTextParser(parsedGrammar: ParseGrammarSuccess) {
+class AntlrTextParser(parsGrammarResult: ParseGrammarSuccess) {
   def parse(src: String, startRule: String): ParseTextFailure \/ ParseTextSuccess = {
-    val (tree, rulesNames, rule, errors) = parseText(src, startRule, parsedGrammar.grammar, parsedGrammar.lexerGrammar)
-    val treeModel = getTreeModel(tree, rulesNames)
+    parsGrammarResult match {
+      case eg: EmptyGrammar => ParseTextFailure("Cannot parse text with empty grammar provided").left
+      case parsedGrammar: ParsedGrammar => {
+        val (tree, rulesNames, rule, errors) = parseText(src, startRule, parsedGrammar.grammar, parsedGrammar.lexerGrammar)
+        val treeModel = getTreeModel(tree, rulesNames)
 
-    ParseTextSuccess(treeModel, rule, errors, parsedGrammar).right
+        ParseTextSuccess(treeModel, rule, errors, parsedGrammar).right
+      }
+    }
   }
 
   private def parseText(src: String, startRule: String, grammar: Grammar, lexerGrammar: LexerGrammar) = {

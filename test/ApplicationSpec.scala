@@ -9,13 +9,12 @@ import play.api.test._
 
 import scala.concurrent.Future
 
-@Ignore
 class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
 
   val MISMATCHED_EOF = """[{"source":"parser","message":"error(50): :2:9: syntax error: mismatched input '<EOF>' expecting SEMI while matching a rule","errType":"error","col":9,"line":2}]"""
   val RULE_CAN_MATCH_EMPTY_STRING = """[{"source":"parser","message":"warning(146): :2:9: non-fragment lexer rule ID can match the empty string","errType":"warning","col":9,"line":2}]"""
   val A_LETTER_PARSE_TREE = """{"rule":"a","text":"id","children":[],"hasError":false}"""
-  val LEXER_ERROR = """[{"source":"lexer","message":"error(50): :2:9: syntax error: '<EOF>' came as a complete surprise to me while matching a lexer rule","errType":"error","col":9,"line":2},{"source":"lexer","message":"warning(125): :2:5: implicit definition of token ID in parser","errType":"warning","col":5,"line":2}]"""
+  val LEXER_ERROR = """[{"source":"lexer","message":"error(50): :2:9: syntax error: '<EOF>' came as a complete surprise to me while matching a lexer rule","errType":"error","col":9,"line":2}]"""
   val LEXER_WARNING = """[{"source":"lexer","message":"warning(146): :2:1: non-fragment lexer rule ID can match the empty string","errType":"warning","col":1,"line":2}]"""
 
   implicit lazy val materializer: Materializer = app.materializer
@@ -96,7 +95,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
 
     "return lexer grammar warnings" in {
       val response = sendParseRequest(
-        ("grammar", "grammar test; \n id: ID; "),
+        ("grammar", "parser grammar test; \n id: ID; "),
         ("lexer", "lexer grammar test; \n ID: 'a'*;"),
         ("src", "a"),
         ("rule", ""))
@@ -107,12 +106,12 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
 
     "use implicit lexer for combined grammar" in {
       val response = sendParseRequest(
-        ("grammar", "grammar test; \n two: '2';"),
-        ("src", "2"),
-        ("rule", "")
-      )
+        ("grammar", "grammar test; \n id: ID; ID: 'a'*;"),
+        ("src", "a"),
+        ("rule", ""))
 
       status(response) mustBe OK
+      contentAsJson(response) \ "tree" mustBe JsDefined(Json.parse(A_LETTER_PARSE_TREE))
     }
   }
 
