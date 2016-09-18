@@ -1,8 +1,7 @@
 package utils
 
-import models.ParseTree
 import play.api.libs.json.{JsValue, Json, Writes}
-import services.{ParseGrammarFailure, ParsedGrammar, ParseMessage, ParseTextSuccess}
+import services._
 
 object JsonWriters {
   implicit val messageWriter = Json.writes[ParseMessage]

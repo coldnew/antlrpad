@@ -1,15 +1,11 @@
 package services
 
-import models.{Failure, ParseTree, Success}
 import org.antlr.v4.runtime._
 import org.antlr.v4.tool.{Grammar, GrammarParserInterpreter, LexerGrammar}
 
 import scala.collection.JavaConverters._
 import scalaz.Scalaz._
 import scalaz.\/
-
-case class ParseTextSuccess(tree: ParseTree, rule: String, messages: Seq[ParseMessage], grammar: ParsedGrammar) extends Success
-case class ParseTextFailure(error: String) extends Failure
 
 class AntlrTextParser(parsGrammarResult: ParseGrammarSuccess) {
   def parse(src: String, startRule: String): ParseTextFailure \/ ParseTextSuccess = {

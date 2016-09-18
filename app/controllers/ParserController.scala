@@ -1,28 +1,24 @@
 package controllers
 
 import com.google.inject.{Inject, Singleton}
-import models.{Failure, ParseTree, Success}
 import play.Environment
 import play.api.data.Forms._
 import play.api.data._
 import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.libs.json.{JsValue, Json, Writes}
+import play.api.libs.json.Json
 import play.api.mvc._
 import repo.ParsedResultsRepository
 import services._
+import utils.JsonWriters._
 
 import scala.concurrent.Future
 import scalaz.Scalaz._
 import scalaz.{-\/, \/, \/-}
-import utils.JsonWriters._
 
 @Singleton
 class ParserController @Inject() (env: Environment,
                                   private val repo: ParsedResultsRepository,
                                   val messagesApi: MessagesApi) extends Controller with I18nSupport {
-
-  case class RequestSuccess(src: String, grammar: String, lexer: Option[String], rule: String) extends Success
-  case class RequestFailure(error: String) extends Failure
 
   val form = Form(mapping(
     "src" -> nonEmptyText,
