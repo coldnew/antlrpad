@@ -8,7 +8,7 @@ import scalaz.Scalaz._
 
 import utils.Cached._
 
-abstract class AntlrBaseGrammarParser(useCache: Boolean) {
+abstract class BaseGrammarParser(useCache: Boolean) {
 
   implicit lazy val inMemoryCache = new InMemoryCache[Int, ParseGrammarFailure \/ ParseGrammarSuccess]()
 

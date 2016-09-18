@@ -48,9 +48,9 @@ class ParserController @Inject() (env: Environment,
   def parseSrc() = Action { implicit request=>
     getResult(for {
       form    <-  getRequestData
-      lexer   <-  new AntlrLexerGrammarParser(useCache = env.isProd).parse(form.lexer.getOrElse(""))
-      parser  <-  new AntlrGrammarParser(useCache = env.isProd, lexer).parse(form.grammar)
-      tree    <-  new AntlrTextParser(parser).parse(form.src, form.rule)
+      lexer   <-  new LexerGrammarParser(useCache = env.isProd).parse(form.lexer.getOrElse(""))
+      parser  <-  new GrammarParser(useCache = env.isProd, lexer).parse(form.grammar)
+      tree    <-  new ExpressionParser(parser).parse(form.src, form.rule)
     } yield tree)
   }
 

@@ -6,14 +6,14 @@ import org.scalatest.{Failed, MustMatchers, Outcome, fixture}
 import scalaz.{-\/, \/-}
 
 class ParserAndLexerGrammarParserTest extends fixture.FlatSpec with MustMatchers {
-  case class FixtureParam(parser: AntlrGrammarParser, lexerGrammar: ParseGrammarSuccess)
+  case class FixtureParam(parser: GrammarParser, lexerGrammar: ParseGrammarSuccess)
 
   override def withFixture(test: OneArgTest): Outcome = {
-    val lexerGrammarParser = new AntlrLexerGrammarParser(useCache = false)
+    val lexerGrammarParser = new LexerGrammarParser(useCache = false)
     val lexer = lexerGrammarParser.parse("lexer grammar l1; A: 'a';")
 
     lexer.map(l => {
-      val parser = new AntlrGrammarParser(false, l)
+      val parser = new GrammarParser(false, l)
       val param = FixtureParam(parser, l)
       test(param)
     }).getOrElse(Failed("Cannot parse lexer grammar"))

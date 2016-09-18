@@ -7,7 +7,7 @@ import scala.collection.JavaConverters._
 import scalaz.Scalaz._
 import scalaz.\/
 
-class AntlrTextParser(parsGrammarResult: ParseGrammarSuccess) {
+class ExpressionParser(parsGrammarResult: ParseGrammarSuccess) {
   def parse(src: String, startRule: String): ParseTextFailure \/ ParseTextSuccess = {
     parsGrammarResult match {
       case eg: EmptyGrammar => ParseTextFailure("Cannot parse text with empty grammar provided").left

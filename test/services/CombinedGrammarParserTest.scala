@@ -5,7 +5,7 @@ import org.scalatestplus.play.PlaySpec
 import scalaz.{-\/, \/-}
 
 class CombinedGrammarParserTest extends PlaySpec {
-  val combinedParser = new AntlrGrammarParser(false, EmptyGrammar())
+  val combinedParser = new GrammarParser(false, EmptyGrammar())
 
   "Combined grammar parser" should {
 

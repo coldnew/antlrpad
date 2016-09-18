@@ -3,12 +3,12 @@ package services
 import org.scalatest._
 import scalaz.\/-
 
-class AntlrTextParserTest extends fixture.FlatSpec with MustMatchers {
+class ExpressionParserTest extends fixture.FlatSpec with MustMatchers {
 
   case class FixtureParam(grammar: ParseGrammarSuccess)
 
   def withFixture(test: OneArgTest) = {
-    val parser = new AntlrGrammarParser(false, EmptyGrammar())
+    val parser = new GrammarParser(false, EmptyGrammar())
     parser.parse("grammar test; a: A+; A: 'a';").map(g =>
       withFixture(test.toNoArgTest(FixtureParam(g)))
     ).getOrElse(Failed("Grammar cannot be parsed"))
@@ -16,7 +16,7 @@ class AntlrTextParserTest extends fixture.FlatSpec with MustMatchers {
 
   "AntlrText parser" should
     "parse valid expression" in { g =>
-      val parser = new AntlrTextParser(g.grammar)
+      val parser = new ExpressionParser(g.grammar)
       val result = parser.parse("a", "")
 
       result mustBe a [\/-[_]]
@@ -28,7 +28,7 @@ class AntlrTextParserTest extends fixture.FlatSpec with MustMatchers {
     }
 
   it should "return errors for invalid expression" in { g =>
-    val parser = new AntlrTextParser(g.grammar)
+    val parser = new ExpressionParser(g.grammar)
     val result = parser.parse("b", "")
 
     result mustBe a [\/-[_]]

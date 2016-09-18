@@ -2,7 +2,7 @@ package services
 
 import org.antlr.v4.tool.Grammar
 
-class AntlrGrammarParser(useCache: Boolean, lexer: ParseGrammarSuccess) extends AntlrBaseGrammarParser(useCache) {
+class GrammarParser(useCache: Boolean, lexer: ParseGrammarSuccess) extends BaseGrammarParser(useCache) {
   override val listener: GrammarParserErrorListener = new GrammarParserErrorListener(tool.errMgr, ParseMessage.SourceParser)
   override def preProcessGrammar(grammar: Grammar): Grammar = {
     lexer match {

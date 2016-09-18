@@ -4,8 +4,8 @@ import org.scalatestplus.play.PlaySpec
 
 import scalaz.{-\/, \/-}
 
-class AntlrLexerGrammarParserTest extends PlaySpec {
-  val lexerGrammarParser = new AntlrLexerGrammarParser(useCache = false)
+class LexerGrammarParserTest extends PlaySpec {
+  val lexerGrammarParser = new LexerGrammarParser(useCache = false)
 
   "Lexical grammar parser" should {
 
