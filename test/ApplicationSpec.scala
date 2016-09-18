@@ -25,6 +25,10 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
     route(app, FakeRequest(POST, "/api/parse/").withFormUrlEncodedBody(data: _*)).get
   }
 
+  def sendSaveRequest(data: (String, String)*): Future[Result] = {
+    route(app, FakeRequest(POST, "/api/save/").withFormUrlEncodedBody(data: _*)).get
+  }
+
   "Routes" should {
 
     "send 404 on a non-existing page" in  {
@@ -112,6 +116,16 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
 
       status(response) mustBe OK
       contentAsJson(response) \ "tree" mustBe JsDefined(Json.parse(A_LETTER_PARSE_TREE))
+    }
+
+    "return saved record ID for incorrect grammar" in {
+      val response = sendSaveRequest(
+        ("grammar", "grammar test; \n id: ID; ID: 'a'*"),
+        ("src", "a"),
+        ("rule", ""))
+
+      status(response) mustBe OK
+      contentAsJson(response) \ "id" mustBe JsDefined(Json.toJson(1))
     }
   }
 
