@@ -8,3 +8,6 @@ class LexerGrammarParser(useCache: Boolean) extends BaseGrammarParser(useCache) 
   override def getResult(g: Grammar): ParsedGrammar = ParsedGrammar(null, g.asInstanceOf[LexerGrammar], g.getRuleNames, listener.warnings)
 }
 
+object LexerGrammarParser {
+  def apply(useCache: Boolean): LexerGrammarParser = new LexerGrammarParser(useCache)
+}

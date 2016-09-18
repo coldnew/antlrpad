@@ -20,3 +20,7 @@ class GrammarParser(useCache: Boolean, lexer: ParseGrammarSuccess) extends BaseG
     }
   }
 }
+
+object GrammarParser {
+  def apply(useCache: Boolean, lexer: ParseGrammarSuccess): GrammarParser = new GrammarParser(useCache, lexer)
+}

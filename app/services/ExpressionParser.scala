@@ -48,3 +48,7 @@ class ExpressionParser(parsGrammarResult: ParseGrammarSuccess) {
     ParseTree(node.getText, ruleNames(node.getRuleIndex), children, node.exception != null)
   }
 }
+
+object ExpressionParser {
+  def apply(parsGrammarResult: ParseGrammarSuccess): ExpressionParser = new ExpressionParser(parsGrammarResult)
+}
