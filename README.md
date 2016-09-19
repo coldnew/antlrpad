@@ -9,7 +9,7 @@ test your Antlr4 grammars, parse expressions and build parse trees, see errors a
 - [X] Return and expression parsing errors
 - [X] Show parsing errors in the parse tree
 - [X] Grammar file syntax highlight
-- [ ] Add separate lexical grammar support
+- [X] Add separate lexical grammar support
 - [ ] Add set of "test" grammars (C#, Java, Python)
 - [ ] UI (Angular?)
 - [ ] Generate ace.js syntax highlight for source expression based on lexer grammar
