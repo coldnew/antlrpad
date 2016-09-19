@@ -37,7 +37,10 @@ class ParserController @Inject() (env: Environment,
   }
 
   def load(id: Int) = Action.async {
-    Future.successful(Ok("{}"))
+    repo.load(id).map {
+      case Some(record) => Ok(Json.toJson(record))
+      case None => NotFound("Cannot find record")
+    }
   }
 
   def getResult(output: Failure \/ Success, id: Option[Int] = None): Result = output match {

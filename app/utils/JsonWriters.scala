@@ -1,6 +1,7 @@
 package utils
 
 import play.api.libs.json.{JsValue, Json, Writes}
+import repo.SavedParseResult
 import services._
 
 object JsonWriters {
@@ -19,4 +20,6 @@ object JsonWriters {
 
   implicit val treeWriter = Json.writes[ParseTree]
   implicit val successWriter = Json.writes[ParseTextSuccess]
+
+  implicit val savedParseResult = Json.writes[SavedParseResult]
 }
