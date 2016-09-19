@@ -48,15 +48,20 @@ App.prototype.loadRules = function(rules, rule) {
 };
 
 App.prototype.showGrammarErrors = function(errors) {
-    var errorNotifications = errors.map(function(e) {
-    return {
-        column: e.col,
-        row: e.line - 1,
-        type: e.errType,
-        text: e.message
-    }});
+    var getErrorView = function(e) {
+       return {
+           column: e.col,
+           row: e.line - 1,
+           type: e.errType,
+           text: e.message
+       }
+    };
 
-    this.parserEditor.getSession().setAnnotations(errorNotifications);
+    var parserMessages = errors.filter(function(x){ return x.source == "parser" }).map(getErrorView);
+    var lexerMessages = errors.filter(function(x){ return x.source == "lexer" }).map(getErrorView);
+
+    this.parserEditor.getSession().setAnnotations(parserMessages);
+    this.lexerEditor.getSession().setAnnotations(lexerMessages);
 };
 
 App.prototype.showParseMessages = function(messages) {
@@ -85,7 +90,7 @@ App.prototype.parseExpression = function(url, callback) {
             self.showParseMessages(data.messages);
         } else {
             $('#grammarError').show();
-            self.showGrammarErrors(data.errors);
+            self.showGrammarErrors(data.grammar.errors);
             self.draw(null);
         }
 
