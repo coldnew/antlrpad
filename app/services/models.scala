@@ -5,6 +5,8 @@ import org.antlr.v4.tool.{Grammar, LexerGrammar}
 sealed trait Success
 sealed trait Failure
 
+case class Error(msg: String) extends Failure
+
 // handing request
 case class RequestSuccess(src: String, grammar: String, lexer: Option[String], rule: String) extends Success
 case class RequestFailure(error: String) extends Failure

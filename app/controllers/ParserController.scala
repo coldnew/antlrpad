@@ -7,7 +7,7 @@ import play.api.data._
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc._
-import repo.{ParsedResultsRepository, SavedParseResult}
+import repo.{DbCodeValidator, ParsedResultsRepository, SavedParseResult}
 import services._
 import utils.JsonWriters._
 
@@ -17,7 +17,7 @@ import scalaz.{-\/, \/, \/-}
 
 @Singleton
 class ParserController @Inject() (env: Environment,
-                                  val repo: ParsedResultsRepository,
+                                  repo: ParsedResultsRepository,
                                   val messagesApi: MessagesApi) extends Controller with I18nSupport {
 
   import play.api.libs.concurrent.Execution.Implicits.defaultContext
@@ -64,13 +64,20 @@ class ParserController @Inject() (env: Environment,
   }
 
   def save() = Action.async { implicit request =>
+    val codeGenerator = new CodeGenerator(6, 10, new DbCodeValidator(repo))
+
     getRequestData(request).fold(
       f => Future.successful { getResult(f.left) },
       s => {
-        val rec = SavedParseResult(s.grammar, s.lexer.getOrElse(""), s.src, None)
-        repo.save(rec).map(id => {
-          getResult(getParseResult(request), id)
-        })
+        codeGenerator.getNewCode.flatMap {
+          case -\/(Error(msg)) => Future.successful(BadRequest(msg))
+          case \/-(code) => {
+            val rec = SavedParseResult(s.grammar, s.lexer.getOrElse(""), s.src, code,  None)
+            repo.save(rec).map(id => {
+              getResult(getParseResult(request), id)
+            })
+          }
+        }
       }
     )
   }
