@@ -25,7 +25,7 @@ class ParsedResultsRepositoryImpl @Inject() (protected val dbConfigProvider: Dat
   import driver.api._
   import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
-  def saveAndGetCode(parsedResult: SavedParseResult): Future[Option[String]] = db.run {
+  def saveAndGetCode(parsedResult: SavedParseResult): Future[Option[Int]] = db.run {
     resultsTableQueryInc.insertOrUpdate(parsedResult)
   }
 
@@ -37,7 +37,7 @@ class ParsedResultsRepositoryImpl @Inject() (protected val dbConfigProvider: Dat
     resultsTableQuery.filter(_.code === code).length.result.map(_ == 0)
   }
 
-  override def save(parsedResult: SavedParseResult): Future[String] = saveAndGetCode(parsedResult).map(_.getOrElse(""))
+  override def save(parsedResult: SavedParseResult): Future[String] = saveAndGetCode(parsedResult).map(x => parsedResult.code)
 }
 
 class DbCodeValidator(parsedResultsRepository: ParsedResultsRepository) extends CodeValidator {
@@ -62,5 +62,5 @@ trait ParsedResultsTable {
   }
 
   lazy protected val resultsTableQuery = TableQuery[ParsedResultsTable]
-  lazy protected val resultsTableQueryInc = resultsTableQuery returning resultsTableQuery.map(_.code)
+  lazy protected val resultsTableQueryInc = resultsTableQuery returning resultsTableQuery.map(_.id)
 }
