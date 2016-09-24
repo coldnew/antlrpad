@@ -4,7 +4,7 @@ ALTER TABLE "ParsedResults"
 ADD ("code" varchar);
 
 CREATE INDEX CodeIdx
-ON "ParsedResults" (code)
+ON "ParsedResults" ("code")
 
 # --- !Downs
 
