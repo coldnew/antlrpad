@@ -10,12 +10,11 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import scala.concurrent.Future
 
 class ParsedResultsRepositoryMock extends ParsedResultsRepository {
-  override def insert(parsedResult: SavedParseResult): Future[Int] = Future { 0 }
-  override def load(id: Int): Future[Option[SavedParseResult]] = id match {
-    case 1 => Future { Some(SavedParseResult("", "", "", "", Some(1))) }
+  override def load(id: String): Future[Option[SavedParseResult]] = id match {
+    case "abcdef" => Future { Some(SavedParseResult("", "", "", "abcdef", Some(1))) }
     case _ => Future { None }
   } 
-  override def save(parsedResult: SavedParseResult): Future[Option[Int]] = Future { Some(1) }
+  override def save(parsedResult: SavedParseResult): Future[String] = Future { "abcdef" }
 
   override def codeUnique(code: String): Future[Boolean] = Future.successful(true)
 }

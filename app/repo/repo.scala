@@ -13,9 +13,8 @@ case class SavedParseResult(grammar: String, lexer: String, src: String, code: S
 
 @ImplementedBy(classOf[ParsedResultsRepositoryImpl])
 trait ParsedResultsRepository {
-  def insert(parsedResult: SavedParseResult): Future[Int]
-  def save(parsedResult: SavedParseResult): Future[Option[Int]]
-  def load(id: Int): Future[Option[SavedParseResult]]
+  def save(parsedResult: SavedParseResult): Future[String]
+  def load(id: String): Future[Option[SavedParseResult]]
   def codeUnique(code: String): Future[Boolean]
 }
 
@@ -26,19 +25,19 @@ class ParsedResultsRepositoryImpl @Inject() (protected val dbConfigProvider: Dat
   import driver.api._
   import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
-  def insert(parsedResult: SavedParseResult): Future[Int] = db.run { resultsTableQueryInc += parsedResult }
-
-  def save(parsedResult: SavedParseResult): Future[Option[Int]] = db.run {
+  def saveAndGetCode(parsedResult: SavedParseResult): Future[Option[String]] = db.run {
     resultsTableQueryInc.insertOrUpdate(parsedResult)
   }
 
-  def load(id: Int): Future[Option[SavedParseResult]] = db.run {
-    resultsTableQuery.filter(_.id === id).result.headOption
+  def load(id: String): Future[Option[SavedParseResult]] = db.run {
+    resultsTableQuery.filter(_.code === id).result.headOption
   }
 
   def codeUnique(code: String): Future[Boolean] = db.run {
     resultsTableQuery.filter(_.code === code).length.result.map(_ == 0)
   }
+
+  override def save(parsedResult: SavedParseResult): Future[String] = saveAndGetCode(parsedResult).map(_.getOrElse(""))
 }
 
 class DbCodeValidator(parsedResultsRepository: ParsedResultsRepository) extends CodeValidator {
@@ -63,5 +62,5 @@ trait ParsedResultsTable {
   }
 
   lazy protected val resultsTableQuery = TableQuery[ParsedResultsTable]
-  lazy protected val resultsTableQueryInc = resultsTableQuery returning resultsTableQuery.map(_.id)
+  lazy protected val resultsTableQueryInc = resultsTableQuery returning resultsTableQuery.map(_.code)
 }

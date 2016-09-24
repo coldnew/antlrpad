@@ -29,7 +29,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
     route(app, FakeRequest(POST, "/api/save/").withFormUrlEncodedBody(data: _*)).get
   }
 
-  def sendLoadRequest(id: Int): Future[Result] = {
+  def sendLoadRequest(id: String): Future[Result] = {
     route(app, FakeRequest(GET, s"/api/load/$id")).get
   }
 
@@ -129,7 +129,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
         ("rule", ""))
 
       status(response) mustBe OK
-      contentAsJson(response) \ "id" mustBe JsDefined(Json.toJson(1))
+      contentAsJson(response) \ "id" mustBe JsDefined(JsString("abcdef"))
     }
 
     "return saved record ID for incorrect lexer" in {
@@ -140,7 +140,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
         ("rule", ""))
 
       status(response) mustBe OK
-      contentAsJson(response) \ "id" mustBe JsDefined(Json.toJson(1))
+      contentAsJson(response) \ "id" mustBe JsDefined(JsString("abcdef"))
     }
 
     "return saved record ID for parsed tree" in {
@@ -151,18 +151,19 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
         ("rule", ""))
 
       status(response) mustBe OK
-      contentAsJson(response) \ "id" mustBe JsDefined(Json.toJson(1))
+      contentAsJson(response) \ "id" mustBe JsDefined(JsString("abcdef"))
     }
 
     "load saved record by id" in {
-      val response = sendLoadRequest(1)
+      val response = sendLoadRequest("abcdef")
 
       status(response) mustBe OK
-      contentAsJson(response) \ "id" mustBe JsDefined(Json.toJson(1))
+      contentAsJson(response) \ "code" mustBe JsDefined(JsString("abcdef"))
+
     }
 
     "return 404 for non-existing record" in {
-      val response = sendLoadRequest(2)
+      val response = sendLoadRequest("fedcba")
 
       status(response) mustBe NOT_FOUND
     }

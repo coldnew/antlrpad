@@ -36,14 +36,14 @@ class ParserController @Inject() (env: Environment,
     )
   }
 
-  def load(id: Int) = Action.async {
+  def load(id: String) = Action.async {
     repo.load(id).map {
       case Some(record) => Ok(Json.toJson(record))
       case None => NotFound("Cannot find record")
     }
   }
 
-  def getResult(output: Failure \/ Success, id: Option[Int] = None): Result = output match {
+  def getResult(output: Failure \/ Success, id: Option[String] = None): Result = output match {
     case -\/(rf: RequestFailure)      => BadRequest(rf.error)
     case -\/(f: ParseGrammarFailure)  => Ok(Json.toJson(f).asInstanceOf[JsObject] + ("id" -> Json.toJson(id)))
     case \/-(s: ParseTextSuccess)     => Ok(Json.toJson(s).asInstanceOf[JsObject] + ("id" -> Json.toJson(id)))
@@ -74,7 +74,7 @@ class ParserController @Inject() (env: Environment,
           case \/-(code) => {
             val rec = SavedParseResult(s.grammar, s.lexer.getOrElse(""), s.src, code,  None)
             repo.save(rec).map(id => {
-              getResult(getParseResult(request), id)
+              getResult(getParseResult(request), Option(id))
             })
           }
         }
