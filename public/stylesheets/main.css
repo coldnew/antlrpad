@@ -11,6 +11,10 @@
     margin-top: 1em;
 }
 
+.m5t {
+    margin-top: 0.5em;
+}
+
 .m10b {
     margin-bottom: 1em;
 }
@@ -19,3 +23,5 @@
 #parseMessages { display: none; }
 
 .red { color: red; }
+
+#startRule { width: 220px; }

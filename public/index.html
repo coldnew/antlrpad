@@ -38,17 +38,12 @@
         </div><!-- /.container-fluid -->
     </nav>
     <div class="container">
-        <div class="row m10b m10t">
+        <div class="row">
             <div class="col-md-12">
-                <div class="input-group">
-                    <input type="text" id="src" class="form-control" value="2 + 2 = 4">
-                    <div class="input-group-btn">
-                        <button class="btn btn-primary" id="parse">Parse</button>
-                    </div>
-                </div>
+                <textarea id="src" class="form-control" rows="3">2 + 2 = 4</textarea>
             </div>
         </div>
-        <div class="row">
+        <div class="row m10t">
             <div class="col-md-12">
                 <div class="alert alert-warning" id="parseMessages"></div>
             </div>
@@ -57,9 +52,6 @@
             <div class="col-md-6">
                 <div class="alert alert-danger" id="grammarError">There are problems with this grammar</div>
                 <div class="form-group">
-                    <select class="form-control m10b" id="startRule">
-
-                    </select>
                     <ul class="nav nav-tabs" role="tablist">
                         <li role="presentation" class="active"><a href="#grammarTab" role="tab" data-toggle="tab">Grammar</a></li>
                         <li role="presentation"><a href="#lexerTab" role="tab" data-toggle="tab">Lexer</a></li>
@@ -246,7 +238,24 @@ WS
                 </div>
             </div>
             <div class="col-md-6">
-                <div id="tree">Click 'Parse' to display parse tree here</div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-inline pull-right">
+                            <div class="form-group">
+                                <label for="startRule">Rule</label>
+                                <select class="form-control" id="startRule">
+                                    <option>(click parse first)</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" id="parse">Parse</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div id="tree"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
