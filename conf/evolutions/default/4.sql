@@ -3,7 +3,7 @@
 ALTER TABLE "ParsedResults"
 ADD ("code" varchar);
 
-CREATE INDEX CodeIdx
+CREATE UNIQUE INDEX CodeIdx
 ON "ParsedResults" ("code")
 
 # --- !Downs
