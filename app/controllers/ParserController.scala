@@ -29,50 +29,49 @@ class ParserController @Inject() (env: Environment,
     "rule" -> text
   )(RequestSuccess.apply)(RequestSuccess.unapply))
 
-  private def getRequestData(implicit request: Request[AnyContent]): RequestFailure \/ RequestSuccess  = {
-    form.bindFromRequest.fold(
-      formWithErrors => RequestFailure(formWithErrors.errorsAsJson.toString()).left,
-      formData => formData.right
-    )
-  }
-
   private def getResult(output: Failure \/ Success, id: Option[String] = None): Result = output match {
-    case -\/(rf: RequestFailure)      => BadRequest(rf.error)
     case -\/(f: ParseGrammarFailure)  => Ok(Json.toJson(f).asInstanceOf[JsObject] + ("id" -> Json.toJson(id)))
     case \/-(s: ParseTextSuccess)     => Ok(Json.toJson(s).asInstanceOf[JsObject] + ("id" -> Json.toJson(id)))
     case _                            => NotImplemented
   }
 
-  private def getParseResult(request: Request[AnyContent]) = {
+  private def getParseResult(form: RequestSuccess) = {
     for {
-      form    <-  getRequestData(request)
       lexer   <-  LexerGrammarParser(useCache = env.isProd).parse(form.lexer.getOrElse(""))
       parser  <-  GrammarParser(useCache = env.isProd, lexer).parse(form.grammar)
       tree    <-  ExpressionParser(parser).parse(form.src, form.rule)
     } yield tree
   }
 
-  def parseExpr() = Action { implicit request=>
-    getResult(getParseResult(request))
+  // this is to allow use withValidRequest in async actions and wrap BadRequest into Future
+  implicit val wrapResult: Result => Future[Result] = Future.successful
+
+  private def withValidRequest[T](request: Request[AnyContent])(body: RequestSuccess => T)(implicit wrap: Result => T): T = {
+    form.bindFromRequest()(request).fold(
+      formWithErrors => wrap(BadRequest(formWithErrors.errorsAsJson.toString())),
+      formData => body(formData)
+    )
   }
 
-  def save() = Action.async { implicit request =>
-    val codeGenerator = new CodeGenerator(6, 10, new DbCodeValidator(repo))
+  def parseExpr() = Action { request=>
+    withValidRequest[Result](request) { data =>
+      getResult(getParseResult(data))
+    }
+  }
 
-    getRequestData(request).fold(
-      f => Future.successful { getResult(f.left) },
-      s => {
-        codeGenerator.getNewCode.flatMap {
-          case -\/(Error(msg)) => Future.successful(BadRequest(msg))
-          case \/-(code) => {
-            val rec = SavedParseResult(s.grammar, s.lexer.getOrElse(""), s.src, code,  None)
-            repo.save(rec).map(id => {
-              getResult(getParseResult(request), Option(id))
-            })
-          }
+  def save() = Action.async { request =>
+    withValidRequest(request) { data =>
+      val codeGenerator = new CodeGenerator(6, 10, new DbCodeValidator(repo))
+      codeGenerator.getNewCode.flatMap {
+        case -\/(Error(msg)) => Future.successful(BadRequest(msg))
+        case \/-(code) => {
+          val rec = SavedParseResult(data.grammar, data.lexer.getOrElse(""), data.src, code,  None)
+          repo.save(rec).map(id => {
+            getResult(getParseResult(data), Option(id))
+          })
         }
       }
-    )
+    }
   }
 
   def load(id: String) = Action.async {
