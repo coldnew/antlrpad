@@ -36,7 +36,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
   "Routes" should {
 
     "send 404 on a non-existing page" in  {
-      route(app, FakeRequest(GET, "/boum")).map(status(_)) mustBe Some(NOT_FOUND)
+      route(app, FakeRequest(GET, "/boum")).map(status) mustBe Some(NOT_FOUND)
     }
 
   }

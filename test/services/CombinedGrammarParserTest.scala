@@ -31,7 +31,7 @@ class CombinedGrammarParserTest extends PlaySpec {
       combinedParser.listener.errors must contain (ParseMessage("parser","error(50): :1:24: syntax error: '<EOF>' came as a complete surprise to me while looking for lexer rule element","error",24,1))
     }
 
-    "return failure for empty string" in {
+    "return empty grammar for empty string" in {
       val g = combinedParser.parse("")
 
       g mustBe a [\/-[_]]

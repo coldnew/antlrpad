@@ -22,28 +22,21 @@ class ParserController @Inject() (env: Environment,
 
   import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
-  val form = Form(mapping(
+  private val form = Form(mapping(
     "src" -> nonEmptyText,
     "grammar" -> nonEmptyText,
     "lexer" -> optional(text),
     "rule" -> text
   )(RequestSuccess.apply)(RequestSuccess.unapply))
 
-  def getRequestData(implicit request: Request[AnyContent]): RequestFailure \/ RequestSuccess  = {
+  private def getRequestData(implicit request: Request[AnyContent]): RequestFailure \/ RequestSuccess  = {
     form.bindFromRequest.fold(
       formWithErrors => RequestFailure(formWithErrors.errorsAsJson.toString()).left,
       formData => formData.right
     )
   }
 
-  def load(id: String) = Action.async {
-    repo.load(id).map {
-      case Some(record) => Ok(Json.toJson(record))
-      case None => NotFound("Cannot find record")
-    }
-  }
-
-  def getResult(output: Failure \/ Success, id: Option[String] = None): Result = output match {
+  private def getResult(output: Failure \/ Success, id: Option[String] = None): Result = output match {
     case -\/(rf: RequestFailure)      => BadRequest(rf.error)
     case -\/(f: ParseGrammarFailure)  => Ok(Json.toJson(f).asInstanceOf[JsObject] + ("id" -> Json.toJson(id)))
     case \/-(s: ParseTextSuccess)     => Ok(Json.toJson(s).asInstanceOf[JsObject] + ("id" -> Json.toJson(id)))
@@ -59,7 +52,7 @@ class ParserController @Inject() (env: Environment,
     } yield tree
   }
 
-  def parseSrc() = Action { implicit request=>
+  def parseExpr() = Action { implicit request=>
     getResult(getParseResult(request))
   }
 
@@ -80,5 +73,12 @@ class ParserController @Inject() (env: Environment,
         }
       }
     )
+  }
+
+  def load(id: String) = Action.async {
+    repo.load(id).map {
+      case Some(record) => Ok(Json.toJson(record))
+      case None => NotFound("Cannot find record")
+    }
   }
 }

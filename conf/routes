@@ -2,7 +2,7 @@
 
 GET     /                        controllers.Assets.at(path="/public", file="index.html")
 
-POST     /api/parse/             controllers.ParserController.parseSrc
+POST     /api/parse/             controllers.ParserController.parseExpr
 POST     /api/save/              controllers.ParserController.save
 GET      /api/load/:id           controllers.ParserController.load(id: String)
 
