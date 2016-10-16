@@ -22,12 +22,14 @@ class ParserController @Inject() (env: Environment,
 
   import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
+  case class ParseRequest(src: String, grammar: String, lexer: Option[String], rule: String)
+
   private val form = Form(mapping(
     "src" -> nonEmptyText,
     "grammar" -> nonEmptyText,
     "lexer" -> optional(text),
     "rule" -> text
-  )(RequestSuccess.apply)(RequestSuccess.unapply))
+  )(ParseRequest.apply)(ParseRequest.unapply))
 
   private def getResult(output: Failure \/ Success, id: Option[String] = None): Result = output match {
     case -\/(f: ParseGrammarFailure)  => Ok(Json.toJson(f).asInstanceOf[JsObject] + ("id" -> Json.toJson(id)))
@@ -35,7 +37,7 @@ class ParserController @Inject() (env: Environment,
     case _                            => NotImplemented
   }
 
-  private def getParseResult(form: RequestSuccess) = {
+  private def getParseResult(form: ParseRequest) = {
     for {
       lexer   <-  LexerGrammarParser(useCache = env.isProd).parse(form.lexer.getOrElse(""))
       parser  <-  GrammarParser(useCache = env.isProd, lexer).parse(form.grammar)
@@ -46,7 +48,7 @@ class ParserController @Inject() (env: Environment,
   // this is to allow use withValidRequest in async actions and wrap BadRequest into Future
   implicit val wrapResult: Result => Future[Result] = Future.successful
 
-  private def withValidRequest[T](request: Request[AnyContent])(body: RequestSuccess => T)(implicit wrap: Result => T): T = {
+  private def withValidRequest[T](request: Request[AnyContent])(body: ParseRequest => T)(implicit wrap: Result => T): T = {
     form.bindFromRequest()(request).fold(
       formWithErrors => wrap(BadRequest(formWithErrors.errorsAsJson.toString())),
       formData => body(formData)
