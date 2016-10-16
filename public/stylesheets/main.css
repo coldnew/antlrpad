@@ -2,6 +2,10 @@
     min-height: 500px;
 }
 
+#src {
+    min-height: 150px;
+}
+
 #tree {
     min-width:400px;
     height:500px;
