@@ -1,6 +1,15 @@
 # --- !Ups
-CREATE TABLE "ParsedResults"("id" SERIAL PRIMARY KEY ,"grammar" varchar , "src" varchar, "tree" varchar);
+
+CREATE TABLE "ParsedResults"(
+    "id" SERIAL PRIMARY KEY,
+    "code"      varchar,
+    "grammar"   varchar,
+    "lexer"     varchar,
+    "src"       varchar,
+    "rule"      varchar);
+
+CREATE UNIQUE INDEX CodeIdx ON "ParsedResults" ("code");
 
 # --- !Downs
 
-DROP TABLE "employee";
+DROP TABLE "ParsedResults";
