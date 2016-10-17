@@ -67,7 +67,7 @@ class ParserController @Inject() (env: Environment,
       codeGenerator.getNewCode.flatMap {
         case -\/(Error(msg)) => Future.successful(BadRequest(msg))
         case \/-(code) => {
-          val rec = SavedParseResult(data.grammar, data.lexer.getOrElse(""), data.src, code,  None)
+          val rec = SavedParseResult(data.grammar, data.lexer.getOrElse(""), data.rule, data.src, code,  None)
           repo.save(rec).map(id => {
             val json = Json.obj(
               "saved"   -> Json.obj("id" -> JsString(id)),
@@ -84,14 +84,15 @@ class ParserController @Inject() (env: Environment,
   def load(id: String) = Action.async {
     repo.load(id).map {
       case Some(record) => {
-        val res = getParseResult(ParseRequest(record.src, record.grammar, Option(record.lexer), ""))
+        val res = getParseResult(ParseRequest(record.src, record.grammar, Option(record.lexer), record.rule))
         val json = Json.obj(
           "parsed"  ->  getJson(res),
           "loaded"   ->  Json.obj(
             "grammarSrc"  ->  record.grammar,
             "lexerSrc"    ->  record.lexer,
             "code"        ->  record.code,
-            "src"         ->  record.src
+            "src"         ->  record.src,
+            "rules"       ->  record.rule
           )
         )
 
