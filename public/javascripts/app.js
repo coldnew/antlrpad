@@ -4,13 +4,18 @@ function App() {
     this.saveUrl = 'api/save/';
 };
 
-App.prototype.init = function() {
+App.prototype.loadSession = function() {
     var self = this;
-
     var sessionId = location.hash.substring(1);
     if (sessionId) {
         self.load(sessionId);
     }
+};
+
+App.prototype.init = function() {
+    var self = this;
+
+    self.loadSession();
 
     $('#parse').click(function() {
         self.parseExpression(self.parseUrl);
@@ -32,6 +37,10 @@ App.prototype.init = function() {
             self.parseExpression(self.parseUrl);
         }, 1000);
     });
+
+    window.onhashchange = function() {
+        self.loadSession();
+    };
 
     self.parserEditor = self.initEditor("grammar");
     self.lexerEditor = self.initEditor("lexer");
