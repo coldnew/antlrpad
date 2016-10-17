@@ -75,29 +75,33 @@ App.prototype.showParseMessages = function(messages) {
     }
 }
 
+App.prototype.showParsedExpression = function(parsed) {
+    var self = this;
+    var data = parsed;
+    if (data && data.tree && data.grammar.rules) {
+        self.loadRules(data.grammar.rules, data.rule);
+        self.draw(self.getTreeModel(data.tree));
+        $('#grammarError').hide();
+        self.showGrammarErrors(data.grammar.warnings);
+        self.showParseMessages(data.messages);
+    } else {
+        $('#grammarError').show();
+        self.showGrammarErrors(data.grammar.errors);
+        self.draw(null);
+    }
+}
+
 App.prototype.parseExpression = function(url, callback) {
     var self = this;
     var grammar = self.parserEditor.getValue();
     var lexer = self.lexerEditor.getValue();
     var src = $('#src').val();
     var startRuleSel = $('#startRule');
-    $.post(url, { grammar: grammar, lexer: lexer, src: src, rule: startRuleSel.val() }, function(data){
-        if (data.tree && data.grammar.rules) {
-            self.loadRules(data.grammar.rules, data.rule);
-            self.draw(self.getTreeModel(data.tree));
-            $('#grammarError').hide();
-            self.showGrammarErrors(data.grammar.warnings);
-            self.showParseMessages(data.messages);
-        } else {
-            $('#grammarError').show();
-            self.showGrammarErrors(data.grammar.errors);
-            self.draw(null);
+    $.post(url, { grammar: grammar, lexer: lexer, src: src, rule: startRuleSel.val() }, function(resp){
+        self.showParsedExpression(resp.parsed, callback);
+        if (callback && resp.saved && resp.saved.id) {
+            callback(resp.saved.id);
         }
-
-        if (callback && data.id) {
-            callback(data.id);
-        }
-
     }).fail(function(err){
         $('#grammarError').show();
     });
@@ -105,11 +109,12 @@ App.prototype.parseExpression = function(url, callback) {
 
 App.prototype.load = function(id) {
     var self = this;
-    $.get(self.loadUrl + id, {}, function(res){
-        self.parserEditor.setValue(res.grammar, -1);
-        self.lexerEditor.setValue(res.lexer, -1);
+    $.get(self.loadUrl + id, {}, function(resp){
+        var res = resp.loaded;
+        self.parserEditor.setValue(res.grammarSrc, -1);
+        self.lexerEditor.setValue(res.lexerSrc, -1);
         $('#src').val(res.src);
-//        self.loadRules(res.rules.split(','), res.rule);
+        self.showParsedExpression(resp.parsed);
     });
 };
 
