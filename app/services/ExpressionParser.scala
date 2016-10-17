@@ -38,6 +38,12 @@ class ExpressionParser(parsGrammarResult: ParseGrammarSuccess) {
     (tree, ruleNames, ruleNames(startRuleIndex), errorListener.allMessages)
   }
 
+  def getNodeName(node: ParserRuleContext): String = {
+    val text = node.getText
+    if (text.length > 30) text.substring(0, 30) + "..."
+    else text
+  }
+
   private def getTreeModel(node: ParserRuleContext, ruleNames: Array[String]): ParseTree = {
     if (node == null || node.children == null)
       return ParseTree("", "", Seq.empty, false)
@@ -48,7 +54,7 @@ class ExpressionParser(parsGrammarResult: ParseGrammarSuccess) {
       }
     }
 
-    ParseTree(node.getText, ruleNames(node.getRuleIndex), children, node.exception != null)
+    ParseTree(getNodeName(node), ruleNames(node.getRuleIndex), children, node.exception != null)
   }
 }
 
