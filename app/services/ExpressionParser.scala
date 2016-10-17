@@ -39,6 +39,9 @@ class ExpressionParser(parsGrammarResult: ParseGrammarSuccess) {
   }
 
   private def getTreeModel(node: ParserRuleContext, ruleNames: Array[String]): ParseTree = {
+    if (node == null || node.children == null)
+      return ParseTree("", "", Seq.empty, false)
+
     val children = node.children.asScala.flatMap { _ match {
         case c: ParserRuleContext => Seq(getTreeModel(c, ruleNames))
         case _ => Seq.empty
