@@ -65,7 +65,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
         ("rule", ""))
 
       status(response) mustBe OK
-      contentAsJson(response) \ "grammar" \ "errors" mustBe JsDefined(Json.parse(MISMATCHED_EOF))
+      contentAsJson(response) \ "parsed" \ "grammar" \ "errors" mustBe JsDefined(Json.parse(MISMATCHED_EOF))
     }
 
     "return combined grammar warnings" in {
@@ -76,7 +76,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
       )
 
       status(response) mustBe OK
-      contentAsJson(response) \ "grammar" \ "warnings" mustBe JsDefined(Json.parse(RULE_CAN_MATCH_EMPTY_STRING))
+      contentAsJson(response) \ "parsed" \ "grammar" \ "warnings" mustBe JsDefined(Json.parse(RULE_CAN_MATCH_EMPTY_STRING))
     }
 
     "use lexer grammar when provided" in {
@@ -87,7 +87,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
         ("rule", ""))
 
       status(response) mustBe OK
-      contentAsJson(response) \ "tree" mustBe JsDefined(Json.parse(A_LETTER_PARSE_TREE))
+      contentAsJson(response) \ "parsed" \ "tree" mustBe JsDefined(Json.parse(A_LETTER_PARSE_TREE))
     }
 
     "return lexer grammar errors" in {
@@ -98,7 +98,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
         ("rule", ""))
 
       status(response) mustBe OK
-      contentAsJson(response) \ "grammar" \ "errors" mustBe JsDefined(Json.parse(LEXER_ERROR))
+      contentAsJson(response) \ "parsed" \ "grammar" \ "errors" mustBe JsDefined(Json.parse(LEXER_ERROR))
     }
 
     "return lexer grammar warnings" in {
@@ -109,7 +109,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
         ("rule", ""))
 
       status(response) mustBe OK
-      contentAsJson(response) \ "grammar" \ "warnings" mustBe JsDefined(Json.parse(LEXER_WARNING))
+      contentAsJson(response) \ "parsed" \ "grammar" \ "warnings" mustBe JsDefined(Json.parse(LEXER_WARNING))
     }
 
     "use implicit lexer for combined grammar" in {
@@ -119,7 +119,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
         ("rule", ""))
 
       status(response) mustBe OK
-      contentAsJson(response) \ "tree" mustBe JsDefined(Json.parse(A_LETTER_PARSE_TREE))
+      contentAsJson(response) \ "parsed" \ "tree" mustBe JsDefined(Json.parse(A_LETTER_PARSE_TREE))
     }
 
     "return saved record ID for incorrect grammar" in {
@@ -129,7 +129,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
         ("rule", ""))
 
       status(response) mustBe OK
-      contentAsJson(response) \ "id" mustBe JsDefined(JsString("abcdef"))
+      contentAsJson(response) \ "saved" \"id" mustBe JsDefined(JsString("abcdef"))
     }
 
     "return saved record ID for incorrect lexer" in {
@@ -140,7 +140,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
         ("rule", ""))
 
       status(response) mustBe OK
-      contentAsJson(response) \ "id" mustBe JsDefined(JsString("abcdef"))
+      contentAsJson(response) \ "saved" \"id" mustBe JsDefined(JsString("abcdef"))
     }
 
     "return saved record ID for parsed tree" in {
@@ -151,15 +151,20 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest with AntlrFakeApp {
         ("rule", ""))
 
       status(response) mustBe OK
-      contentAsJson(response) \ "id" mustBe JsDefined(JsString("abcdef"))
+      contentAsJson(response) \ "saved" \ "id" mustBe JsDefined(JsString("abcdef"))
     }
 
     "load saved record by id" in {
       val response = sendLoadRequest("abcdef")
 
       status(response) mustBe OK
-      contentAsJson(response) \ "code" mustBe JsDefined(JsString("abcdef"))
 
+      contentAsJson(response) \ "loaded" \ "src" mustBe JsDefined(JsString("id"))
+      contentAsJson(response) \ "loaded" \ "code" mustBe JsDefined(JsString("abcdef"))
+      contentAsJson(response) \ "loaded" \ "grammarSrc" mustBe JsDefined(JsString("grammar test; id: ID+;"))
+      contentAsJson(response) \ "loaded" \ "lexerSrc" mustBe JsDefined(JsString("lexer grammar test; ID: 'id'+;"))
+
+      contentAsJson(response) \ "parsed" \ "grammar" \ "rules" mustBe JsDefined(JsArray(Seq(JsString("id"))))
     }
 
     "return 404 for non-existing record" in {

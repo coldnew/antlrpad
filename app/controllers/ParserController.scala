@@ -5,7 +5,7 @@ import play.Environment
 import play.api.data.Forms._
 import play.api.data._
 import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json._
 import play.api.mvc._
 import repo.{DbCodeValidator, ParsedResultsRepository, SavedParseResult}
 import services._
@@ -31,10 +31,10 @@ class ParserController @Inject() (env: Environment,
     "rule" -> text
   )(ParseRequest.apply)(ParseRequest.unapply))
 
-  private def getResult(output: Failure \/ Success, id: Option[String] = None): Result = output match {
-    case -\/(f: ParseGrammarFailure)  => Ok(Json.toJson(f).asInstanceOf[JsObject] + ("id" -> Json.toJson(id)))
-    case \/-(s: ParseTextSuccess)     => Ok(Json.toJson(s).asInstanceOf[JsObject] + ("id" -> Json.toJson(id)))
-    case _                            => NotImplemented
+  private def getJson(output: Failure \/ Success): JsObject = output match {
+    case -\/(f: ParseGrammarFailure)  => Json.toJson(f).asInstanceOf[JsObject]
+    case \/-(s: ParseTextSuccess)     => Json.toJson(s).asInstanceOf[JsObject]
+    case _                            => Json.obj()
   }
 
   private def getParseResult(form: ParseRequest) = {
@@ -57,7 +57,7 @@ class ParserController @Inject() (env: Environment,
 
   def parseExpr() = Action { request=>
     withValidRequest[Result](request) { data =>
-      getResult(getParseResult(data))
+      Ok(Json.obj("parsed" -> getJson(getParseResult(data))))
     }
   }
 
@@ -69,7 +69,12 @@ class ParserController @Inject() (env: Environment,
         case \/-(code) => {
           val rec = SavedParseResult(data.grammar, data.lexer.getOrElse(""), data.src, code,  None)
           repo.save(rec).map(id => {
-            getResult(getParseResult(data), Option(id))
+            val json = Json.obj(
+              "saved"   -> Json.obj("id" -> JsString(id)),
+              "parsed"  -> getJson(getParseResult(data))
+            )
+
+            Ok(json)
           })
         }
       }
@@ -78,7 +83,20 @@ class ParserController @Inject() (env: Environment,
 
   def load(id: String) = Action.async {
     repo.load(id).map {
-      case Some(record) => Ok(Json.toJson(record))
+      case Some(record) => {
+        val res = getParseResult(ParseRequest(record.src, record.grammar, Option(record.lexer), ""))
+        val json = Json.obj(
+          "parsed"  ->  getJson(res),
+          "loaded"   ->  Json.obj(
+            "grammarSrc"  ->  record.grammar,
+            "lexerSrc"    ->  record.lexer,
+            "code"        ->  record.code,
+            "src"         ->  record.src
+          )
+        )
+
+        Ok(json)
+      }
       case None => NotFound("Cannot find record")
     }
   }

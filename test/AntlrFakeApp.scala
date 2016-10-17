@@ -11,7 +11,7 @@ import scala.concurrent.Future
 
 class ParsedResultsRepositoryMock extends ParsedResultsRepository {
   override def load(id: String): Future[Option[SavedParseResult]] = id match {
-    case "abcdef" => Future { Some(SavedParseResult("", "", "", "abcdef", Some(1))) }
+    case "abcdef" => Future { Some(SavedParseResult("grammar test; id: ID+;", "lexer grammar test; ID: 'id'+;", "id", "abcdef", Some(1))) }
     case _ => Future { None }
   } 
   override def save(parsedResult: SavedParseResult): Future[String] = Future { "abcdef" }
