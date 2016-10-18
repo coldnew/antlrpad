@@ -1,1 +1,2 @@
-/public/libs/* linguist-vendored=true
+/public/* linguist-vendored=true
+/conf/* linguist-vendored=true
