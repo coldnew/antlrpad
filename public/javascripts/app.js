@@ -93,10 +93,12 @@ App.prototype.showParsedExpression = function(parsed) {
         $('#grammarError').hide();
         self.showGrammarErrors(data.grammar.warnings);
         self.showParseMessages(data.messages);
+        $('a[href="#treeTab"]').tab('show');
     } else {
         $('#grammarError').show();
         self.showGrammarErrors(data.grammar.errors);
         self.draw(null);
+        $('a[href="#grammarTab"]').tab('show');
     }
 }
 
